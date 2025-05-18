@@ -1,5 +1,5 @@
 const SumersaultLogo = ({ height = 40 }) => {
-    // SVG representation of the Sumersault logo
+    // SVG representation of the Sumersault logo in Dark Green color (#0A482E)
     return (
         <svg height={height} viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg">
             <g fill="#FFFFFF">

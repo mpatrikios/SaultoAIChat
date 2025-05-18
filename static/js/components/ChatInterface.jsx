@@ -8,8 +8,19 @@ const ChatInterface = () => {
     
     // Initialize or load conversation
     React.useEffect(() => {
-        fetchConversation();
-        fetchAllConversations();
+        const initializeChat = async () => {
+            await fetchConversation();
+            await fetchAllConversations();
+        };
+        
+        initializeChat();
+        
+        // Set up interval to refresh conversations list every 10 seconds
+        const intervalId = setInterval(() => {
+            fetchAllConversations();
+        }, 10000);
+        
+        return () => clearInterval(intervalId);
     }, []);
     
     const fetchConversation = async (id = null) => {
