@@ -380,6 +380,19 @@ body {
     .example-queries {
         grid-template-columns: 1fr;
     }
+    
+    .sidebar {
+        width: 75%;
+        max-width: 300px;
+    }
+    
+    .toggle-sidebar.open {
+        transform: translateX(calc(75% + 10px));
+    }
+    
+    .chat-container.sidebar-open {
+        margin-left: 0;
+    }
 }
 
 @media (max-width: 480px) {
@@ -402,5 +415,13 @@ body {
     
     .message-input-form {
         padding: 0.5rem;
+    }
+    
+    .sidebar {
+        width: 85%;
+    }
+    
+    .toggle-sidebar.open {
+        transform: translateX(calc(85% + 10px));
     }
 }
