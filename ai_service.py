@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from openai import OpenAI
 
 # The newest OpenAI model is "gpt-4o" which was released May 13, 2024.
@@ -8,6 +9,8 @@ GPT_MODEL = "gpt-4o"
 
 # Initialize OpenAI client
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+logging.debug(f"OpenAI API Key present: {bool(OPENAI_API_KEY)}")
+
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 def generate_ai_response(user_message, conversation_history):

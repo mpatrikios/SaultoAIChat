@@ -7,4 +7,6 @@ const App = () => {
     );
 };
 
-ReactDOM.render(<App />, document.getElementById('root'));
+// Update to React 18 usage
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
