@@ -1,15 +1,13 @@
 import React from 'react';
 import SumersaultLogo from './SumersaultLogo';
 
-const Header = () => {
-    return (
-        <header className="header">
-            <div className="logo-container">
-                <SumersaultLogo height={30} />
-                <span className="logo-text">Sumersault Assistant</span>
-            </div>
-        </header>
-    );
+const Header = ({ title }) => {
+  return (
+    <div className="chat-header">
+      <div className="chat-title">{title}</div>
+      <SumersaultLogo height={28} />
+    </div>
+  );
 };
 
 export default Header;
