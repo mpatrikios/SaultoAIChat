@@ -150,20 +150,39 @@ body {
   border-bottom: 1px solid var(--sumersault-light-green);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   position: relative;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-toggle-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.navbar-toggle-btn:hover {
+  background-color: var(--sumersault-light-green);
 }
 
 .chat-title {
   font-size: 1.4rem;
   font-weight: 600;
   color: var(--white);
-  text-align: center;
-}
-
-.chat-header .logo-container {
-  position: absolute;
-  right: 16px;
 }
 
 .message-area {

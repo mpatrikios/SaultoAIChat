@@ -92,6 +92,8 @@ function App() {
       <div className={`main-content ${!isSidebarOpen ? 'main-content-expanded' : ''}`}>
         <Header 
           title={currentConversation?.id ? `Chat ${currentConversation.id}` : 'New Chat'} 
+          toggleSidebar={toggleSidebar}
+          isSidebarOpen={isSidebarOpen}
         />
         
         <ChatInterface 
