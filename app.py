@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 
 from ai_service import generate_ai_response
 
-app = Flask(__name__, static_folder='./static', static_url_path='/')
+app = Flask(__name__, static_folder='static/react-build', static_url_path='')
 app.secret_key = os.environ.get("SESSION_SECRET", "sumersault-dev-secret")
 
 # In-memory storage for conversations (in a production app, this would be a database)
@@ -14,11 +14,11 @@ conversations = {}
 
 @app.route('/')
 def index():
-    return send_from_directory('static/react-build', 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/<path:path>')
 def serve_static(path):
-    return send_from_directory('static/react-build', path)
+    return send_from_directory(app.static_folder, path)
 
 @app.route('/api/conversation', methods=['GET'])
 def get_conversation():
