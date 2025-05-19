@@ -1,18 +1,18 @@
 import os
-import json
 import logging
 from typing import List, Dict, Any
 from openai import OpenAI
 
-# The newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-# Do not change this unless explicitly requested by the user
-GPT_MODEL = "gpt-4o"
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize OpenAI client
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-logging.debug(f"OpenAI API Key present: {bool(OPENAI_API_KEY)}")
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+# the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+# do not change this unless explicitly requested by the user
+MODEL = "gpt-4o"
 
 def generate_ai_response(user_message: str, conversation_history: List[Dict[str, Any]]) -> str:
     """
@@ -25,40 +25,42 @@ def generate_ai_response(user_message: str, conversation_history: List[Dict[str,
     Returns:
         str: The AI-generated response
     """
-    if not OPENAI_API_KEY:
-        return "Error: OpenAI API key not configured. Please set the OPENAI_API_KEY environment variable."
-    
-    # Format the conversation history for the API
-    formatted_messages = []
-    
-    # System message
-    formatted_messages.append({
-        "role": "system", 
-        "content": "You are Sumersault Assistant, a helpful AI assistant. Provide informative, concise, and friendly responses to user queries."
-    })
-    
-    # Add conversation history (up to the last 10 messages to avoid token limits)
-    for msg in conversation_history[-10:]:
-        if msg['sender'] == 'user':
-            formatted_messages.append({"role": "user", "content": msg['text']})
-        else:
-            formatted_messages.append({"role": "assistant", "content": msg['text']})
-    
-    # Add the latest user message if it's not already in the history
-    if not conversation_history or conversation_history[-1]['sender'] != 'user':
-        formatted_messages.append({"role": "user", "content": user_message})
-    
     try:
-        response = openai_client.chat.completions.create(
-            model=GPT_MODEL,
-            messages=formatted_messages
+        # Format the conversation history for OpenAI
+        messages = []
+        
+        # Add system message to set up the assistant's behavior
+        messages.append({
+            "role": "system",
+            "content": "You are a helpful Sumersault assistant, branded with green colors. You provide accurate and concise information to help the user."
+        })
+        
+        # Add conversation history
+        for message in conversation_history:
+            if message.get('sender') == 'user':
+                messages.append({"role": "user", "content": message.get('text', '')})
+            elif message.get('sender') == 'bot':
+                messages.append({"role": "assistant", "content": message.get('text', '')})
+        
+        # Only add the latest user message if it's not already in history
+        if not conversation_history or conversation_history[-1].get('sender') != 'user' or conversation_history[-1].get('text') != user_message:
+            messages.append({"role": "user", "content": user_message})
+        
+        logger.info(f"Sending request to OpenAI with {len(messages)} messages")
+        
+        # Call the OpenAI API
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=messages,
+            max_tokens=1000,
+            temperature=0.7,
         )
         
-        # Get the response content safely
-        content = response.choices[0].message.content
-        if content is None:
-            return "No response from AI. Please try again."
-        return content
+        # Extract and return the assistant's response
+        ai_response = response.choices[0].message.content
+        logger.info(f"Generated AI response: {ai_response[:100]}...")
+        return ai_response
+        
     except Exception as e:
-        logging.error(f"OpenAI API Error: {str(e)}")
-        return f"Sorry, I encountered an error: {str(e)}"
+        logger.error(f"Error generating AI response: {str(e)}")
+        return f"I apologize, but I encountered an error while processing your request. Please try again later. Error: {str(e)}"

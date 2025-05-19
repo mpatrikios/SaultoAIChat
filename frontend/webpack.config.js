@@ -6,6 +6,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, '../static/react-build'),
     filename: 'bundle.js',
+    publicPath: '/',
   },
   module: {
     rules: [
