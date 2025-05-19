@@ -48,28 +48,37 @@ body {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--sumersault-light-green);
+  background-color: white;
 }
 
 .sidebar-title {
   font-size: 1.2rem;
   font-weight: 600;
+  color: var(--sumersault-dark-green);
 }
 
 .sidebar-toggle {
-  position: absolute;
-  right: -40px;
-  top: 10px;
-  width: 32px;
-  height: 32px;
+  position: fixed;
+  left: 260px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 60px;
   background-color: var(--sumersault-dark-green);
   color: white;
   border: none;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 8px 8px 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
+  transition: left 0.3s ease;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-collapsed .sidebar-toggle {
+  left: 0;
 }
 
 .new-chat-button {
