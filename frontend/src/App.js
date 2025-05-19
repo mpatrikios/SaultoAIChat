@@ -7,7 +7,6 @@ import axios from 'axios';
 function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -57,6 +56,37 @@ function App() {
     }
   };
 
+  const deleteConversation = async (conversationId) => {
+    // Prevent deleting current conversation
+    if (currentConversation && conversationId === currentConversation.id) {
+      // If this is the current conversation, select another one first
+      const otherConversation = conversations.find(c => c.id !== conversationId);
+      if (otherConversation) {
+        await fetchConversation(otherConversation.id);
+      } else {
+        setCurrentConversation(null);
+      }
+    }
+    
+    try {
+      // Filter out the deleted conversation locally for immediate UI update
+      setConversations(conversations.filter(c => c.id !== conversationId));
+      
+      // In a real app, this would call a backend API to delete the conversation
+      console.log(`Deleting conversation: ${conversationId}`);
+      // await axios.delete(`/api/conversation?id=${conversationId}`);
+      
+      // For UI testing purposes without backend implementation
+      if (!currentConversation || conversations.length <= 1) {
+        await createNewConversation();
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      // Refresh conversations on error to ensure UI is in sync with backend
+      fetchConversations();
+    }
+  };
+
   const sendMessage = async (message) => {
     if (!currentConversation) return;
     
@@ -74,26 +104,19 @@ function App() {
     }
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
   return (
     <div className="app-container">
       <Sidebar 
-        isOpen={isSidebarOpen}
-        toggleSidebar={toggleSidebar}
         conversations={conversations}
         currentConversationId={currentConversation?.id}
         onConversationSelect={fetchConversation}
         onNewConversation={createNewConversation}
+        onDeleteConversation={deleteConversation}
       />
       
-      <div className={`main-content ${!isSidebarOpen ? 'main-content-expanded' : ''}`}>
+      <div className="main-content">
         <Header 
           title={currentConversation?.id ? `Chat ${currentConversation.id}` : 'New Chat'} 
-          toggleSidebar={toggleSidebar}
-          isSidebarOpen={isSidebarOpen}
         />
         
         <ChatInterface 

@@ -1,15 +1,14 @@
 import React from 'react';
 
 const Sidebar = ({ 
-  isOpen, 
-  toggleSidebar, 
   conversations, 
   currentConversationId, 
   onConversationSelect, 
-  onNewConversation 
+  onNewConversation,
+  onDeleteConversation
 }) => {
   return (
-    <div className={`sidebar ${!isOpen ? 'sidebar-collapsed' : ''}`}>
+    <div className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-title">History</div>
       </div>
@@ -23,11 +22,23 @@ const Sidebar = ({
           <div 
             key={conversation.id}
             className={`conversation-item ${conversation.id === currentConversationId ? 'active' : ''}`}
-            onClick={() => onConversationSelect(conversation.id)}
           >
-            <div className="conversation-preview">
+            <div 
+              className="conversation-preview"
+              onClick={() => onConversationSelect(conversation.id)}
+            >
               {conversation.preview}
             </div>
+            <button 
+              className="delete-conversation-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteConversation(conversation.id);
+              }}
+              title="Delete conversation"
+            >
+              <i className="fas fa-trash"></i>
+            </button>
           </div>
         ))}
       </div>

@@ -109,9 +109,11 @@ body {
 .conversation-item {
   padding: 12px 16px;
   border-bottom: 1px solid var(--sumersault-light-green);
-  cursor: pointer;
   transition: background-color 0.2s ease;
   opacity: 0.8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .conversation-item:hover {
@@ -129,6 +131,27 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  cursor: pointer;
+}
+
+.delete-conversation-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.delete-conversation-btn:hover {
+  opacity: 1;
+  color: #ff5252;
 }
 
 /* Main Content Styles */
