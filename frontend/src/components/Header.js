@@ -4,8 +4,10 @@ import SumersaultLogo from './SumersaultLogo';
 const Header = ({ title }) => {
   return (
     <div className="chat-header">
-      <div className="chat-title">{title}</div>
-      <SumersaultLogo height={28} />
+      <div className="chat-title">Sumersault Chat</div>
+      <div className="logo-container">
+        <SumersaultLogo height={28} />
+      </div>
     </div>
   );
 };

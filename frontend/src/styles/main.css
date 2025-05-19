@@ -137,17 +137,24 @@ body {
 
 .chat-header {
   padding: 16px;
-  background-color: var(--white);
-  border-bottom: 1px solid var(--light-gray);
+  background-color: var(--sumersault-dark-green);
+  border-bottom: 1px solid var(--sumersault-light-green);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  position: relative;
 }
 
 .chat-title {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 600;
-  color: var(--sumersault-dark-green);
+  color: var(--white);
+  text-align: center;
+}
+
+.chat-header .logo-container {
+  position: absolute;
+  right: 16px;
 }
 
 .message-area {

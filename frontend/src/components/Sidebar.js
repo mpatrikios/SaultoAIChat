@@ -15,7 +15,7 @@ const Sidebar = ({
       </button>
       
       <div className="sidebar-header">
-        <div className="sidebar-title">Sumersault Chat</div>
+        <div className="sidebar-title">History</div>
       </div>
       
       <button className="new-chat-button" onClick={onNewConversation}>
