@@ -111,6 +111,20 @@ def get_all_conversations():
         })
     return jsonify(conversation_list)
 
+@app.route('/api/conversation', methods=['DELETE'])
+def delete_conversation():
+    conversation_id = request.args.get('id')
+    
+    if not conversation_id:
+        return jsonify({'error': 'Missing conversation ID'}), 400
+    
+    if conversation_id in conversations:
+        del conversations[conversation_id]
+        logger.info(f"Deleted conversation: {conversation_id}")
+        return jsonify({'success': True})
+    else:
+        return jsonify({'error': 'Conversation not found'}), 404
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json(force=True)

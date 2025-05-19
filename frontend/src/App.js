@@ -57,27 +57,27 @@ function App() {
   };
 
   const deleteConversation = async (conversationId) => {
-    // Prevent deleting current conversation
-    if (currentConversation && conversationId === currentConversation.id) {
-      // If this is the current conversation, select another one first
-      const otherConversation = conversations.find(c => c.id !== conversationId);
-      if (otherConversation) {
-        await fetchConversation(otherConversation.id);
-      } else {
-        setCurrentConversation(null);
-      }
-    }
-    
     try {
-      // Filter out the deleted conversation locally for immediate UI update
-      setConversations(conversations.filter(c => c.id !== conversationId));
+      // Prevent deleting current conversation without switching to another one first
+      if (currentConversation && conversationId === currentConversation.id) {
+        // If this is the current conversation, select another one first
+        const otherConversation = conversations.find(c => c.id !== conversationId);
+        if (otherConversation) {
+          await fetchConversation(otherConversation.id);
+        } else {
+          setCurrentConversation(null);
+        }
+      }
       
-      // In a real app, this would call a backend API to delete the conversation
-      console.log(`Deleting conversation: ${conversationId}`);
-      // await axios.delete(`/api/conversation?id=${conversationId}`);
+      // Call the backend API to delete the conversation
+      await axios.delete(`/api/conversation?id=${conversationId}`);
+      console.log(`Deleted conversation: ${conversationId}`);
       
-      // For UI testing purposes without backend implementation
-      if (!currentConversation || conversations.length <= 1) {
+      // Update the local state to remove the deleted conversation
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      // Create a new conversation if needed
+      if (conversations.length <= 1) {
         await createNewConversation();
       }
     } catch (error) {
