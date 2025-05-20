@@ -1,10 +1,12 @@
 import os
 import logging
+import uuid
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from openai import AzureOpenAI      # or from openai import OpenAI in v1.x
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +16,20 @@ load_dotenv()
 app = Flask(__name__, static_folder='static/react-build', static_url_path='')
 CORS(app)
 app.secret_key = os.environ.get("SESSION_SECRET", "sumersault-dev-secret")
+
+# File upload configuration
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'json', 'zip'}
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+
+# Ensure upload directory exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Initialize OpenAI client
 try:
@@ -57,12 +73,40 @@ def get_conversation():
 
 @app.route('/api/message', methods=['POST'])
 def add_message():
-    data = request.json
-    conversation_id = data.get('conversation_id')
-    message_text = data.get('message')
+    file_info = None
+    file_path = None
     
-    if not conversation_id or not message_text:
-        return jsonify({'error': 'Missing conversation ID or message'}), 400
+    # Check if the post request has the file part
+    if 'file' in request.files:
+        file = request.files['file']
+        if file and file.filename and allowed_file(file.filename):
+            # Generate a secure filename with UUID to prevent collisions
+            filename = secure_filename(file.filename)
+            unique_filename = f"{uuid.uuid4()}_{filename}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            
+            # Save the file
+            file.save(file_path)
+            
+            # Create file info for storing in the message
+            file_info = {
+                'name': filename,
+                'path': file_path,
+                'type': file.content_type,
+                'size': os.path.getsize(file_path)
+            }
+            logger.info(f"File uploaded: {filename} ({file_info['size']} bytes)")
+    
+    # Get conversation ID and message text from form data
+    conversation_id = request.form.get('conversation_id')
+    message_text = request.form.get('message', '')
+    
+    if not conversation_id:
+        return jsonify({'error': 'Missing conversation ID'}), 400
+    
+    # Allow empty message text if a file is attached
+    if not message_text and not file_info:
+        return jsonify({'error': 'Missing message content (text or file)'}), 400
     
     if conversation_id not in conversations:
         conversations[conversation_id] = {
@@ -70,18 +114,24 @@ def add_message():
             'messages': []
         }
     
-    # Add user message
+    # Add user message with file attachment if present
     user_message = {
         'id': len(conversations[conversation_id]['messages']),
         'text': message_text,
         'sender': 'user',
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'file': file_info
     }
     conversations[conversation_id]['messages'].append(user_message)
     
     try:
         # Generate AI response using Azure OpenAI
-        ai_response_text = generate_ai_response(message_text, conversations[conversation_id]['messages'])
+        # Include file information in the message sent to AI if a file was uploaded
+        message_with_file_info = message_text
+        if file_info:
+            message_with_file_info = f"{message_text}\n[File attached: {file_info['name']}]"
+        
+        ai_response_text = generate_ai_response(message_with_file_info, conversations[conversation_id]['messages'])
         
         # Add AI response
         ai_message = {
@@ -123,6 +173,13 @@ def delete_conversation():
         return jsonify({'success': True})
     else:
         return jsonify({'error': 'Conversation not found'}), 404
+        
+@app.route('/api/uploads/<filename>', methods=['GET'])
+def download_file(filename):
+    """
+    Serve uploaded files for download
+    """
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route("/chat", methods=["POST"])
 def chat():

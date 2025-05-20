@@ -62,13 +62,35 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
                 {message.text}
                 {message.file && (
                   <div className="attached-file">
-                    <div className="file-icon">
-                      <i className={`fas fa-${getFileIcon(message.file.type)}`}></i>
-                    </div>
-                    <div className="file-details">
-                      <div className="file-name">{message.file.name}</div>
-                      <div className="file-size">{formatFileSize(message.file.size)}</div>
-                    </div>
+                    {message.file.path ? (
+                      <a 
+                        href={`/api/uploads/${message.file.path.split('/').pop()}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="file-link"
+                      >
+                        <div className="file-icon">
+                          <i className={`fas fa-${getFileIcon(message.file.type)}`}></i>
+                        </div>
+                        <div className="file-details">
+                          <div className="file-name">{message.file.name}</div>
+                          <div className="file-size">{formatFileSize(message.file.size)}</div>
+                        </div>
+                        <div className="download-icon">
+                          <i className="fas fa-download"></i>
+                        </div>
+                      </a>
+                    ) : (
+                      <>
+                        <div className="file-icon">
+                          <i className={`fas fa-${getFileIcon(message.file.type)}`}></i>
+                        </div>
+                        <div className="file-details">
+                          <div className="file-name">{message.file.name}</div>
+                          <div className="file-size">{formatFileSize(message.file.size)}</div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
