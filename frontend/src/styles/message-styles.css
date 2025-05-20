@@ -1,0 +1,32 @@
+/* Message styling */
+.message {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-content {
+  padding: 12px 16px;
+  border-radius: 8px;
+  max-width: 80%;
+  line-height: 1.5;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.message.user {
+  align-items: flex-end;
+}
+
+.message.bot {
+  align-items: flex-start;
+}
+
+.message.user .message-content {
+  background-color: var(--sumersault-accent-green);
+  color: white;
+}
+
+.message.bot .message-content {
+  background-color: var(--light-gray);
+  color: var(--dark-gray);
+}
