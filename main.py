@@ -79,6 +79,8 @@ def add_message():
     # Check if the post request has the file part
     if 'file' in request.files:
         file = request.files['file']
+        logger.info(f"File received in request: {file.filename if file else 'None'}")
+        
         if file and file.filename and allowed_file(file.filename):
             # Generate a secure filename with UUID to prevent collisions
             filename = secure_filename(file.filename)
@@ -95,7 +97,9 @@ def add_message():
                 'type': file.content_type,
                 'size': os.path.getsize(file_path)
             }
-            logger.info(f"File uploaded: {filename} ({file_info['size']} bytes)")
+            logger.info(f"File uploaded: {filename} ({file_info['size']} bytes), path: {file_path}, type: {file.content_type}")
+        else:
+            logger.warning(f"File upload failed validation: filename={file.filename if file else 'None'}, allowed={allowed_file(file.filename) if file and file.filename else False}")
     
     # Get conversation ID and message text from form data
     conversation_id = request.form.get('conversation_id')
@@ -221,37 +225,61 @@ def generate_ai_response(user_message, conversation_history):
         })
         
         # Process file content from conversation history and include in messages
+        current_message_has_file = False
+        
         for message in conversation_history:
             content = message.get('text', '')
+            has_file = False
             
             # If the message has a file attachment
-            if message.get('sender') == 'user' and message.get('file') and message.get('file').get('path'):
+            if message.get('sender') == 'user' and message.get('file'):
+                has_file = True
                 try:
-                    file_path = message.get('file').get('path')
-                    file_name = message.get('file').get('name')
-                    file_type = message.get('file').get('type', '')
+                    file_info = message.get('file')
+                    file_path = file_info.get('path', '')
+                    file_name = file_info.get('name', 'unnamed-file')
+                    file_type = file_info.get('type', '')
                     
-                    # For text-based files, include their content in the message
-                    if 'text/' in file_type or file_name.endswith(('.txt', '.md', '.csv', '.json', '.py', '.js', '.html', '.css', '.c', '.cpp', '.h', '.xml')):
-                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                            file_content = f.read()
-                            file_excerpt = file_content[:10000]  # Limit to 10K chars to avoid token limits
-                            content += f"\n\nFile attached: {file_name}\nContent of the file:\n```\n{file_excerpt}"
-                            if len(file_content) > 10000:
-                                content += "\n... (content truncated due to length)"
-                            content += "\n```"
-                    # For binary/non-text files, just mention the file
+                    # Log full file info to help debug
+                    logger.info(f"File in message: {file_info}")
+                    
+                    if os.path.exists(file_path):
+                        # For text-based files, include their content in the message
+                        if file_type and ('text/' in file_type or file_name.lower().endswith(('.txt', '.md', '.csv', '.json', '.py', '.js', '.html', '.css', '.c', '.cpp', '.h', '.xml'))):
+                            try:
+                                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                    file_content = f.read()
+                                    file_excerpt = file_content[:10000]  # Limit to 10K chars to avoid token limits
+                                    content += f"\n\nFile attached: {file_name}\nContent of the file:\n```\n{file_excerpt}"
+                                    if len(file_content) > 10000:
+                                        content += "\n... (content truncated due to length)"
+                                    content += "\n```"
+                                    logger.info(f"Successfully read file content of {file_name}")
+                            except Exception as read_err:
+                                logger.error(f"Error reading file content: {str(read_err)}")
+                                content += f"\n\nFile attached: {file_name} (error reading content: {str(read_err)})"
+                        # For binary/non-text files, just mention the file
+                        else:
+                            content += f"\n\nFile attached: {file_name} (binary/non-text file, type: {file_type})"
+                            logger.info(f"Binary file noted: {file_name}")
                     else:
-                        content += f"\n\nFile attached: {file_name} (binary/non-text file, type: {file_type})"
+                        logger.error(f"File path does not exist: {file_path}")
+                        content += f"\n\nFile attached: {file_name} (file not found on server)"
                         
                     logger.info(f"Processing file in conversation: {file_name}")
+                    
+                    # Check if this is the current user's message with a file
+                    if message == conversation_history[-1] and message.get('sender') == 'user':
+                        current_message_has_file = True
                 except Exception as file_err:
                     logger.error(f"Error processing file content: {str(file_err)}")
-                    content += f"\n\nFile attached: {file_name} (unable to process content: {str(file_err)})"
+                    content += f"\n\nFile attached: {file_name if 'file_name' in locals() else 'unknown'} (unable to process content: {str(file_err)})"
             
             # Add to messages based on sender
             if message.get('sender') == 'user':
                 messages.append({"role": "user", "content": content})
+                if has_file:
+                    logger.info(f"Added user message with file content to conversation: {content[:100]}...")
             elif message.get('sender') == 'bot':
                 messages.append({"role": "assistant", "content": content})
         
