@@ -233,10 +233,28 @@ body {
   border-radius: 8px;
   max-width: 80%;
   line-height: 1.5;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
 }
 
 .message.user {
   align-items: flex-end;
+}
+
+.message.bot {
+  align-items: flex-start;
+}
+
+.message.user .message-content {
+  background-color: var(--sumersault-accent-green);
+  color: white;
+  border-color: var(--sumersault-dark-green);
+}
+
+.message.bot .message-content {
+  background-color: var(--white);
+  color: var(--dark-gray);
+  border-color: var(--sumersault-light-green);
 }
 
 * Markdown styling */
