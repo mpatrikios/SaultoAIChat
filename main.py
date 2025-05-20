@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from openai import AzureOpenAI  # or from openai import OpenAI in v1.x
+from openai import OpenAI
 from dotenv import load_dotenv
 
 # Set up logging
@@ -17,12 +17,10 @@ app.secret_key = os.environ.get("SESSION_SECRET", "sumersault-dev-secret")
 
 # Initialize OpenAI client
 try:
-    client = AzureOpenAI(api_key=os.getenv("AZURE_OPENAI_KEY"),
-                         api_version="2024-12-01-preview",
-                         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"))
-    logger.info("Azure OpenAI client initialized successfully")
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    logger.info("OpenAI client initialized successfully")
 except Exception as e:
-    logger.error(f"Error initializing Azure OpenAI client: {str(e)}")
+    logger.error(f"Error initializing OpenAI client: {str(e)}")
     client = None
 
 # In-memory storage for conversations (in a production app, this would be a database)
@@ -194,16 +192,41 @@ def generate_ai_response(user_message, conversation_history):
             messages.append({"role": "user", "content": user_message})
 
         logger.info(
-            f"Sending request to Azure OpenAI with {len(messages)} messages")
+            f"Sending request to OpenAI with {len(messages)} messages")
 
         # For styling testing purposes, return a simple response if client is not initialized
         if client is None:
             logger.info("Using temporary response for styling testing")
             return "This is a temporary response for UI styling testing. The chat functionality will be enabled once Azure OpenAI is properly configured."
 
-        # Call the Azure OpenAI API
-        response = client.chat.completions.create(
-            model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"), messages=messages)
+        # For demo purposes, return a pre-formatted response with Markdown elements
+        # This helps us test the formatting without hitting the API limits
+        return """## Sample Formatted Response
+
+Here's a demonstration of formatted Markdown text:
+
+* **Bullet point 1**: This shows how lists work
+* **Bullet point 2**: With some bold text formatting
+* **Bullet point 3**: And proper indentation
+
+### Code Example
+
+```javascript
+function helloWorld() {
+  console.log("Hello, world!");
+  return true;
+}
+```
+
+### Table Example
+
+| Language | Purpose | Popularity |
+|----------|---------|------------|
+| Python   | General | High       |
+| JavaScript | Web    | High      |
+| SQL      | Database | Medium    |
+
+This demonstrates how the frontend renders different Markdown elements properly."""
 
         # Extract and return the assistant's response
         ai_response = response.choices[0].message.content
