@@ -90,17 +90,39 @@ function App() {
   const sendMessage = async (message) => {
     if (!currentConversation) return;
     
+    setIsLoading(true); // Set loading state to true while waiting for response
+    
     try {
+      // Add user message to the conversation immediately
+      const updatedConversation = {
+        ...currentConversation,
+        messages: [
+          ...currentConversation.messages,
+          {
+            id: Date.now().toString(),
+            sender: 'user',
+            text: message,
+            timestamp: new Date().toISOString()
+          }
+        ]
+      };
+      
+      setCurrentConversation(updatedConversation);
+      
+      // Send the message to the server
       const response = await axios.post('/api/message', {
         conversation_id: currentConversation.id,
         message
       });
       
+      // Update with the server response
       setCurrentConversation(response.data.conversation);
       // Refresh the conversation list to update previews
       fetchConversations();
     } catch (error) {
       console.error('Error sending message:', error);
+    } finally {
+      setIsLoading(false); // Reset loading state when done
     }
   };
 
