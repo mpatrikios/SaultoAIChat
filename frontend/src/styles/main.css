@@ -340,6 +340,7 @@ pre code {
 .message-input-form {
   display: flex;
   gap: 12px;
+  align-items: flex-end;
 }
 
 .message-input {
@@ -380,6 +381,64 @@ pre code {
 .send-button:disabled {
   background-color: var(--mid-gray);
   cursor: not-allowed;
+}
+
+/* File attachment styling */
+.attach-button {
+  width: 48px;
+  height: 48px;
+  background-color: var(--white);
+  color: var(--sumersault-dark-green);
+  border: 1px solid var(--light-gray);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.attach-button:hover {
+  background-color: var(--sumersault-lightest-green);
+}
+
+.attach-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  background-color: var(--sumersault-lightest-green);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+
+.file-name {
+  font-size: 0.9rem;
+  color: var(--sumersault-dark-green);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: var(--sumersault-dark-green);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-file-btn:hover {
+  color: #ff5252;
 }
 
 /* Responsive Adjustments */

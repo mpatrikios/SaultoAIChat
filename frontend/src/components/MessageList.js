@@ -5,6 +5,34 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
 
+// Helper function to format file size
+const formatFileSize = (bytes) => {
+  if (!bytes) return "0 Bytes";
+  
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+// Helper function to get appropriate icon based on file type
+const getFileIcon = (type) => {
+  if (!type) return "file";
+  
+  if (type.startsWith("image/")) return "file-image";
+  if (type.startsWith("video/")) return "file-video";
+  if (type.startsWith("audio/")) return "file-audio";
+  if (type.startsWith("text/")) return "file-alt";
+  if (type.includes("pdf")) return "file-pdf";
+  if (type.includes("word") || type.includes("document")) return "file-word";
+  if (type.includes("excel") || type.includes("sheet")) return "file-excel";
+  if (type.includes("powerpoint") || type.includes("presentation")) return "file-powerpoint";
+  if (type.includes("zip") || type.includes("compressed")) return "file-archive";
+  
+  return "file";
+};
+
 const MessageList = forwardRef(({ messages, isLoading }, ref) => {
   const formatTimestamp = (timestamp) => {
     try {
@@ -30,7 +58,20 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
         <div key={message.id} className={`message ${message.sender}`}>
           <div className="message-content">
             {message.sender === "user" ? (
-              message.text
+              <div>
+                {message.text}
+                {message.file && (
+                  <div className="attached-file">
+                    <div className="file-icon">
+                      <i className={`fas fa-${getFileIcon(message.file.type)}`}></i>
+                    </div>
+                    <div className="file-details">
+                      <div className="file-name">{message.file.name}</div>
+                      <div className="file-size">{formatFileSize(message.file.size)}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}

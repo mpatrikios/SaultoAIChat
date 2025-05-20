@@ -14,17 +14,17 @@ const ChatInterface = ({ conversation, isLoading, onSendMessage }) => {
     }
   }, [conversation]);
   
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = async (e, file = null) => {
     e.preventDefault();
     
-    if (!inputMessage.trim() || isSending) return;
+    if ((!inputMessage.trim() && !file) || isSending) return;
     
     const messageText = inputMessage;
     setInputMessage(''); // Clear input immediately
     setIsSending(true);
     
     try {
-      await onSendMessage(messageText);
+      await onSendMessage(messageText, file);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {

@@ -87,12 +87,29 @@ function App() {
     }
   };
 
-  const sendMessage = async (message) => {
+  const sendMessage = async (message, file = null) => {
     if (!currentConversation) return;
     
     // Generate a temporary ID for the user message
     const tempMessageId = `temp-${Date.now()}`;
     const currentTime = new Date().toISOString();
+    
+    // Create the message text, including file info if present
+    let messageText = message || '';
+    let fileInfo = null;
+    
+    if (file) {
+      fileInfo = {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      };
+      
+      // If no message text but file attached, use the filename as message
+      if (!messageText.trim()) {
+        messageText = `Attached: ${file.name}`;
+      }
+    }
     
     // Add user message to the conversation immediately
     const updatedMessages = [
@@ -100,7 +117,8 @@ function App() {
       {
         id: tempMessageId,
         sender: 'user',
-        text: message,
+        text: messageText,
+        file: fileInfo,
         timestamp: currentTime
       }
     ];
@@ -115,10 +133,20 @@ function App() {
     setIsLoading(true);
     
     try {
-      // Send the message to the server
-      const response = await axios.post('/api/message', {
-        conversation_id: currentConversation.id,
-        message
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('conversation_id', currentConversation.id);
+      formData.append('message', messageText);
+      
+      if (file) {
+        formData.append('file', file);
+      }
+      
+      // Send the message to the server with the file if present
+      const response = await axios.post('/api/message', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
       
       // Update with the server response
