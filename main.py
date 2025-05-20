@@ -199,8 +199,23 @@ def generate_ai_response(user_message, conversation_history):
             logger.info("Using temporary response for styling testing")
             return "This is a temporary response for UI styling testing. The chat functionality will be enabled once Azure OpenAI is properly configured."
 
-        # For demo purposes, return a pre-formatted response with Markdown elements
-        # This helps us test the formatting without hitting the API limits
+        # Try to call OpenAI, but if there's an issue, return a formatted example
+        try:
+            if client and hasattr(client, 'chat'):
+                response = client.chat.completions.create(
+                    model="gpt-4o",  # Using the latest model
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=800
+                )
+                ai_response = response.choices[0].message.content
+                logger.info(f"Generated AI response: {ai_response[:100]}...")
+                return ai_response
+        except Exception as e:
+            logger.error(f"Error with OpenAI API call: {str(e)}")
+            
+        # If OpenAI call failed or client is not properly configured, return a formatted example
+        logger.info("Returning formatted example response")
         return """## Sample Formatted Response
 
 Here's a demonstration of formatted Markdown text:
@@ -227,11 +242,6 @@ function helloWorld() {
 | SQL      | Database | Medium    |
 
 This demonstrates how the frontend renders different Markdown elements properly."""
-
-        # Extract and return the assistant's response
-        ai_response = response.choices[0].message.content
-        logger.info(f"Generated AI response: {ai_response[:100]}...")
-        return ai_response
 
     except Exception as e:
         logger.error(f"Error generating AI response: {str(e)}")
