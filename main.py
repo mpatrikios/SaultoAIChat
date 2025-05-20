@@ -217,15 +217,43 @@ def generate_ai_response(user_message, conversation_history):
         # Add system message to set up the assistant's behavior
         messages.append({
             "role": "system",
-            "content": "You are a helpful Sumersault assistant, branded with green colors. You provide accurate and concise information to help the user."
+            "content": "You are a helpful Sumersault assistant, branded with green colors. You provide accurate and concise information to help the user. When users upload files, analyze their content and provide relevant insights or assistance."
         })
         
-        # Add conversation history
+        # Process file content from conversation history and include in messages
         for message in conversation_history:
+            content = message.get('text', '')
+            
+            # If the message has a file attachment
+            if message.get('sender') == 'user' and message.get('file') and message.get('file').get('path'):
+                try:
+                    file_path = message.get('file').get('path')
+                    file_name = message.get('file').get('name')
+                    file_type = message.get('file').get('type', '')
+                    
+                    # For text-based files, include their content in the message
+                    if 'text/' in file_type or file_name.endswith(('.txt', '.md', '.csv', '.json', '.py', '.js', '.html', '.css', '.c', '.cpp', '.h', '.xml')):
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            file_content = f.read()
+                            file_excerpt = file_content[:10000]  # Limit to 10K chars to avoid token limits
+                            content += f"\n\nFile attached: {file_name}\nContent of the file:\n```\n{file_excerpt}"
+                            if len(file_content) > 10000:
+                                content += "\n... (content truncated due to length)"
+                            content += "\n```"
+                    # For binary/non-text files, just mention the file
+                    else:
+                        content += f"\n\nFile attached: {file_name} (binary/non-text file, type: {file_type})"
+                        
+                    logger.info(f"Processing file in conversation: {file_name}")
+                except Exception as file_err:
+                    logger.error(f"Error processing file content: {str(file_err)}")
+                    content += f"\n\nFile attached: {file_name} (unable to process content: {str(file_err)})"
+            
+            # Add to messages based on sender
             if message.get('sender') == 'user':
-                messages.append({"role": "user", "content": message.get('text', '')})
+                messages.append({"role": "user", "content": content})
             elif message.get('sender') == 'bot':
-                messages.append({"role": "assistant", "content": message.get('text', '')})
+                messages.append({"role": "assistant", "content": content})
         
         # Only add the latest user message if it's not already in history
         if not conversation_history or conversation_history[-1].get('sender') != 'user' or conversation_history[-1].get('text') != user_message:
