@@ -328,6 +328,8 @@ pre code {
 .message-timestamp {
   margin-top: 4px;
   font-size: 0.7rem;
+  color: var(--mid-gray);
+}
 
 .message-input-container {
   padding: 16px;
