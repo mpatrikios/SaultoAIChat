@@ -90,25 +90,31 @@ function App() {
   const sendMessage = async (message) => {
     if (!currentConversation) return;
     
-    setIsLoading(true); // Set loading state to true while waiting for response
+    // Generate a temporary ID for the user message
+    const tempMessageId = `temp-${Date.now()}`;
+    const currentTime = new Date().toISOString();
+    
+    // Add user message to the conversation immediately
+    const updatedMessages = [
+      ...currentConversation.messages,
+      {
+        id: tempMessageId,
+        sender: 'user',
+        text: message,
+        timestamp: currentTime
+      }
+    ];
+    
+    // Update conversation with the user message immediately
+    setCurrentConversation({
+      ...currentConversation,
+      messages: updatedMessages
+    });
+    
+    // Show typing indicator
+    setIsLoading(true);
     
     try {
-      // Add user message to the conversation immediately
-      const updatedConversation = {
-        ...currentConversation,
-        messages: [
-          ...currentConversation.messages,
-          {
-            id: Date.now().toString(),
-            sender: 'user',
-            text: message,
-            timestamp: new Date().toISOString()
-          }
-        ]
-      };
-      
-      setCurrentConversation(updatedConversation);
-      
       // Send the message to the server
       const response = await axios.post('/api/message', {
         conversation_id: currentConversation.id,
@@ -117,12 +123,14 @@ function App() {
       
       // Update with the server response
       setCurrentConversation(response.data.conversation);
+      
       // Refresh the conversation list to update previews
       fetchConversations();
     } catch (error) {
       console.error('Error sending message:', error);
+      // If there's an error, keep the user message in the UI
     } finally {
-      setIsLoading(false); // Reset loading state when done
+      setIsLoading(false);
     }
   };
 

@@ -19,10 +19,12 @@ const ChatInterface = ({ conversation, isLoading, onSendMessage }) => {
     
     if (!inputMessage.trim() || isSending) return;
     
+    const messageText = inputMessage;
+    setInputMessage(''); // Clear input immediately
     setIsSending(true);
+    
     try {
-      await onSendMessage(inputMessage);
-      setInputMessage('');
+      await onSendMessage(messageText);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
