@@ -1,20 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
+import FileUploadButton from './FileUploadButton';
 
 const MessageInput = ({ value, onChange, onSubmit, disabled }) => {
   const [selectedFile, setSelectedFile] = useState(null);
-  const fileInputRef = useRef(null);
   
-  const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
+  const handleFileSelect = (file) => {
+    setSelectedFile(file);
   };
   
   const clearSelectedFile = () => {
     setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
   
   const handleSubmit = (e) => {
@@ -23,10 +18,6 @@ const MessageInput = ({ value, onChange, onSubmit, disabled }) => {
       onSubmit(e, selectedFile);
       clearSelectedFile();
     }
-  };
-  
-  const triggerFileInput = () => {
-    fileInputRef.current.click();
   };
   
   return (
@@ -44,19 +35,8 @@ const MessageInput = ({ value, onChange, onSubmit, disabled }) => {
         </div>
       )}
       <form className="message-input-form" onSubmit={handleSubmit}>
-        <button 
-          type="button" 
-          className="attach-button"
-          onClick={triggerFileInput}
-          disabled={disabled}
-        >
-          <i className="fas fa-paperclip"></i>
-        </button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
+        <FileUploadButton 
+          onFileSelect={handleFileSelect}
           disabled={disabled}
         />
         <textarea

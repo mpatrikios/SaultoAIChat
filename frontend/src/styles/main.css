@@ -384,7 +384,7 @@ pre code {
 }
 
 /* File attachment styling */
-.attach-button {
+.file-upload-button {
   width: 48px;
   height: 48px;
   background-color: var(--white);
@@ -396,13 +396,14 @@ pre code {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  font-size: 20px;
 }
 
-.attach-button:hover {
+.file-upload-button:hover {
   background-color: var(--sumersault-lightest-green);
 }
 
-.attach-button:disabled {
+.file-upload-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
