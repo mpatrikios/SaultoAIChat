@@ -30,3 +30,38 @@
   background-color: var(--light-gray);
   color: var(--dark-gray);
 }
+
+/* Empty chat styling */
+.empty-chat-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin-top: 30vh;
+  text-align: center;
+}
+
+.empty-chat-message p {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--mid-gray);
+  background-color: var(--white);
+  padding: 20px 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid var(--sumersault-accent-green);
+  max-width: 80%;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
