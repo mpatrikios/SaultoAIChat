@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from openai import AzureOpenAI      # or from openai import OpenAI in v1.x
+from openai import OpenAI      # Using standard OpenAI
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 
@@ -34,14 +34,12 @@ def allowed_file(filename):
 
 # Initialize OpenAI client
 try:
-    client = AzureOpenAI(
-        api_key=os.getenv("AZURE_OPENAI_KEY"),
-        api_version="2024-12-01-preview",
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+    client = OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY")
     )
-    logger.info("Azure OpenAI client initialized successfully")
+    logger.info("OpenAI client initialized successfully")
 except Exception as e:
-    logger.error(f"Error initializing Azure OpenAI client: {str(e)}")
+    logger.error(f"Error initializing OpenAI client: {str(e)}")
     client = None
 
 # In-memory storage for conversations (in a production app, this would be a database)
@@ -196,7 +194,7 @@ def chat():
 
     try:
         resp = client.chat.completions.create(
-            model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
+            model="gpt-4o", # the newest OpenAI model is "gpt-4o" which was released May 13, 2024
             messages=messages
         )
         reply = resp.choices[0].message.content
@@ -206,7 +204,7 @@ def chat():
 
 def generate_ai_response(user_message, conversation_history):
     """
-    Generate an AI response using Azure OpenAI.
+    Generate an AI response using OpenAI.
     
     Args:
         user_message (str): The latest message from the user
@@ -288,16 +286,16 @@ def generate_ai_response(user_message, conversation_history):
         if not conversation_history or conversation_history[-1].get('sender') != 'user' or conversation_history[-1].get('text') != user_message:
             messages.append({"role": "user", "content": user_message})
         
-        logger.info(f"Sending request to Azure OpenAI with {len(messages)} messages")
+        logger.info(f"Sending request to OpenAI with {len(messages)} messages")
         
         # For styling testing purposes, return a simple response if client is not initialized
         if client is None:
             logger.info("Using temporary response for styling testing")
-            return "This is a temporary response for UI styling testing. The chat functionality will be enabled once Azure OpenAI is properly configured."
+            return "This is a temporary response for UI styling testing. The chat functionality will be enabled once OpenAI is properly configured."
         
-        # Call the Azure OpenAI API
+        # Call the OpenAI API
         response = client.chat.completions.create(
-            model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
+            model="gpt-4o", # the newest OpenAI model is "gpt-4o" which was released May 13, 2024
             messages=messages
         )
         
