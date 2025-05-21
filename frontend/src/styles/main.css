@@ -506,6 +506,47 @@ pre code {
   color: var(--dark-gray);
 }
 
+/* Copy button styling */
+.message-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.message:hover .message-actions {
+  opacity: 1;
+}
+
+.copy-button {
+  background: none;
+  border: none;
+  color: var(--mid-gray);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  color: var(--sumersault-dark-green);
+  background-color: rgba(200, 200, 200, 0.2);
+}
+
+.message.bot .copy-button {
+  color: var(--mid-gray);
+}
+
+.message.bot .copy-button:hover {
+  color: var(--sumersault-dark-green);
+}
+
+.copy-button .fa-check {
+  color: var(--sumersault-dark-green);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   .sidebar {

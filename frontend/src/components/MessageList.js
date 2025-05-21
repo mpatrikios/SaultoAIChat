@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -34,6 +34,8 @@ const getFileIcon = (type) => {
 };
 
 const MessageList = forwardRef(({ messages, isLoading }, ref) => {
+  const [copiedMessageId, setCopiedMessageId] = useState(null);
+  
   const formatTimestamp = (timestamp) => {
     try {
       const date = new Date(timestamp);
@@ -44,6 +46,19 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
     } catch (e) {
       return "";
     }
+  };
+  
+  const copyToClipboard = (text, messageId) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        // Show success feedback
+        setCopiedMessageId(messageId);
+        setTimeout(() => setCopiedMessageId(null), 2000);
+      },
+      (err) => {
+        console.error('Could not copy text: ', err);
+      }
+    );
   };
 
   return (
@@ -57,6 +72,19 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
       {messages.map((message) => (
         <div key={message.id} className={`message ${message.sender}`}>
           <div className="message-content">
+            <div className="message-actions">
+              <button 
+                className="copy-button" 
+                onClick={() => copyToClipboard(message.text, message.id)}
+                title="Copy message"
+              >
+                {copiedMessageId === message.id ? (
+                  <i className="fas fa-check"></i>
+                ) : (
+                  <i className="fas fa-copy"></i>
+                )}
+              </button>
+            </div>
             {message.sender === "user" ? (
               <div>
                 {message.text}
