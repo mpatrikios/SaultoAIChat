@@ -15,11 +15,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // If no conversation is selected and we have conversations, select the first one
+    // If we have conversations but none selected, select the first one
     if (!currentConversation && conversations.length > 0) {
       fetchConversation(conversations[0].id);
+    } 
+    // If there are no conversations at all, create a new one automatically
+    else if (conversations.length === 0 && !isLoading) {
+      createNewConversation();
     }
-  }, [conversations, currentConversation]);
+  }, [conversations, currentConversation, isLoading]);
 
   const fetchConversations = async () => {
     try {
