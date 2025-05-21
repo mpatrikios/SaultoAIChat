@@ -8,6 +8,7 @@ function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
     // Load all conversations when the app starts
@@ -18,12 +19,15 @@ function App() {
     // If we have conversations but none selected, select the first one
     if (!currentConversation && conversations.length > 0) {
       fetchConversation(conversations[0].id);
+      setInitialCheckDone(true);
     } 
     // If there are no conversations at all, create a new one automatically
-    else if (conversations.length === 0 && !isLoading) {
+    // But only do this once when the app first loads
+    else if (conversations.length === 0 && !isLoading && !initialCheckDone) {
       createNewConversation();
+      setInitialCheckDone(true);
     }
-  }, [conversations, currentConversation, isLoading]);
+  }, [conversations, currentConversation, isLoading, initialCheckDone]);
 
   const fetchConversations = async () => {
     try {
