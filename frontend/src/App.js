@@ -8,26 +8,33 @@ function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
+  // Use localStorage to track if we've already created a conversation for this user
+  const [hasCreatedInitialConversation, setHasCreatedInitialConversation] = useState(
+    localStorage.getItem('hasCreatedInitialConversation') === 'true'
+  );
 
+  // Load conversations when app starts
   useEffect(() => {
-    // Load all conversations when the app starts
     fetchConversations();
   }, []);
 
+  // Handle conversation selection and creation of initial conversation
   useEffect(() => {
-    // If we have conversations but none selected, select the first one
+    // If we have conversations and none is selected, select the first one
     if (!currentConversation && conversations.length > 0) {
       fetchConversation(conversations[0].id);
-      setInitialCheckDone(true);
     } 
-    // If there are no conversations at all, create a new one automatically
-    // But only do this once when the app first loads
-    else if (conversations.length === 0 && !isLoading && !initialCheckDone) {
+    // Create a new conversation ONLY if:
+    // 1. There are no conversations at all
+    // 2. We're not currently loading 
+    // 3. We haven't already created an initial conversation for this user
+    else if (conversations.length === 0 && !isLoading && !hasCreatedInitialConversation) {
       createNewConversation();
-      setInitialCheckDone(true);
+      // Mark that we've created an initial conversation for this user
+      localStorage.setItem('hasCreatedInitialConversation', 'true');
+      setHasCreatedInitialConversation(true);
     }
-  }, [conversations, currentConversation, isLoading, initialCheckDone]);
+  }, [conversations, currentConversation, isLoading, hasCreatedInitialConversation]);
 
   const fetchConversations = async () => {
     try {
