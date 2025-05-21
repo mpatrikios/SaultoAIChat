@@ -153,13 +153,15 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
               </ReactMarkdown>
             )}
             
-            <button 
-              className="message-copy-button" 
-              onClick={() => copyMessageToClipboard(message.text)}
-              title="Copy message to clipboard"
-            >
-              <i className="fas fa-copy"></i>
-            </button>
+            <div className="message-actions">
+              <button 
+                className="message-copy-button" 
+                onClick={() => copyMessageToClipboard(message.text)}
+                title="Copy message to clipboard"
+              >
+                <i className="fas fa-copy"></i>
+              </button>
+            </div>
           </div>
           <div className="message-timestamp">
             {formatTimestamp(message.timestamp)}
