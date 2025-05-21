@@ -45,6 +45,18 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
       return "";
     }
   };
+  
+  // Function to copy message content to clipboard
+  const copyMessageToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        // Show a temporary notification or visual feedback
+        alert('Message copied to clipboard!');
+      })
+      .catch(err => {
+        console.error('Failed to copy message: ', err);
+      });
+  };
 
   return (
     <div className="message-area" ref={ref}>
@@ -140,6 +152,14 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
                 {message.text}
               </ReactMarkdown>
             )}
+            
+            <button 
+              className="message-copy-button" 
+              onClick={() => copyMessageToClipboard(message.text)}
+              title="Copy message to clipboard"
+            >
+              <i className="fas fa-copy"></i>
+            </button>
           </div>
           <div className="message-timestamp">
             {formatTimestamp(message.timestamp)}

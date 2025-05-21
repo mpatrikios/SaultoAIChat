@@ -11,6 +11,40 @@
   max-width: 80%;
   line-height: 1.5;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+/* Copy message button styling */
+.message-copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #6e6e6e;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-content:hover .message-copy-button {
+  opacity: 0.7;
+}
+
+.message-copy-button:hover {
+  opacity: 1 !important;
+  color: var(--sumersault-dark-green);
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.message.user .message-copy-button {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .message.user {
