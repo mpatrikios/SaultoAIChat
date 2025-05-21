@@ -8,10 +8,6 @@ function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  // Use localStorage to track if we've already created a conversation for this user
-  const [hasCreatedInitialConversation, setHasCreatedInitialConversation] = useState(
-    localStorage.getItem('hasCreatedInitialConversation') === 'true'
-  );
 
   // Load conversations when app starts
   useEffect(() => {
@@ -20,21 +16,16 @@ function App() {
 
   // Handle conversation selection and creation of initial conversation
   useEffect(() => {
-    // If we have conversations and none is selected, select the first one
-    if (!currentConversation && conversations.length > 0) {
-      fetchConversation(conversations[0].id);
-    } 
-    // Create a new conversation ONLY if:
-    // 1. There are no conversations at all
-    // 2. We're not currently loading 
-    // 3. We haven't already created an initial conversation for this user
-    else if (conversations.length === 0 && !isLoading && !hasCreatedInitialConversation) {
+    // If conversations are loaded but the list is empty, create a new one
+    // This ensures the sidebar is never empty
+    if (conversations.length === 0 && !isLoading) {
       createNewConversation();
-      // Mark that we've created an initial conversation for this user
-      localStorage.setItem('hasCreatedInitialConversation', 'true');
-      setHasCreatedInitialConversation(true);
+    } 
+    // If we have conversations and none is selected, select the first one
+    else if (!currentConversation && conversations.length > 0) {
+      fetchConversation(conversations[0].id);
     }
-  }, [conversations, currentConversation, isLoading, hasCreatedInitialConversation]);
+  }, [conversations, currentConversation, isLoading]);
 
   const fetchConversations = async () => {
     try {
