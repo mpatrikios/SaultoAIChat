@@ -1,5 +1,3 @@
-# Install these packages:
-# pip install flask-pymongo flask-login python-dotenv authlib requests
 
 import os
 import logging
@@ -14,6 +12,8 @@ from openai import AzureOpenAI
 from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
 from bson.objectid import ObjectId
+import secrets
+import urllib.parse
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +38,28 @@ app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 # MongoDB Configuration
 app.config["MONGO_URI"] = os.environ.get("MONGO_URI", "mongodb://localhost:27017/sumersault")
-mongo = PyMongo(app)
+
+try:
+    mongo = PyMongo(app)
+    logger.info(f"PyMongo initialized with URI: {app.config['MONGO_URI']}")
+
+    # Test connection with a simpler approach
+    try:
+        # Use a simpler connection test
+        client = mongo.cx  # Get the underlying pymongo client
+        client.admin.command('ping')
+        logger.info("✅ MongoDB Atlas connected successfully!")
+
+        # Test database access
+        db = client.get_database('SaultoChat')
+        logger.info(f"✅ Database 'SaultoChat' accessible")
+
+    except Exception as e:
+        logger.error(f"❌ MongoDB connection test failed: {str(e)}")
+
+except Exception as e:
+    logger.error(f"❌ PyMongo initialization failed: {str(e)}")
+    mongo = None
 
 # Login Manager Setup
 login_manager = LoginManager()
@@ -49,19 +70,23 @@ login_manager.login_view = "login"
 oauth = OAuth(app)
 
 # Configure Microsoft OAuth (Azure AD) - SINGLE REGISTRATION
-microsoft = oauth.register(
-    name='microsoft',
-    client_id=os.getenv("MICROSOFT_CLIENT_ID"),
-    client_secret=os.getenv("MICROSOFT_CLIENT_SECRET"),
-    access_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token',
-    authorize_url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-    api_base_url='https://graph.microsoft.com/v1.0/',
-    client_kwargs={
-        'scope': 'openid email profile User.Read',
-        'response_type': 'code'
-    },
-    server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration'
-)
+# microsoft = oauth.register(
+#     name='microsoft',
+#     client_id=os.getenv("MICROSOFT_CLIENT_ID"),
+#     client_secret=os.getenv("MICROSOFT_CLIENT_SECRET"),
+#     access_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token',
+#     authorize_url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+#     api_base_url='https://graph.microsoft.com/v1.0/',
+#     client_kwargs={
+#         'scope': 'openid email profile User.Read',
+#         'response_type': 'code'
+#     },
+#     server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
+#     # Add this to handle the issuer validation issue
+#     jwks_uri='https://login.microsoftonline.com/common/discovery/v2.0/keys',
+#     # Configure token validation
+#     token_endpoint_auth_method='client_secret_post'
+# )
 
 # File upload configuration
 UPLOAD_FOLDER = 'uploads'
@@ -132,29 +157,109 @@ def load_user(user_id):
 def login():
     return render_template('login.html')
 
-@app.route('/microsoft-login')
+@app.route('/microsoft-login')  
 def microsoft_login():
-    redirect_uri = url_for('microsoft_auth', _external=True)
-    return microsoft.authorize_redirect(redirect_uri)
+    import secrets
+    import urllib.parse
+
+    # Generate and store state for CSRF protection
+    state = secrets.token_urlsafe(32)
+    session['oauth_state'] = state
+
+    # Build authorization URL manually
+    redirect_uri = url_for('microsoft_auth', _external=True).replace('http://', 'https://')
+
+    auth_params = {
+        'client_id': os.getenv("MICROSOFT_CLIENT_ID"),
+        'response_type': 'code',
+        'redirect_uri': redirect_uri,
+        'scope': 'openid email profile User.Read',
+        'state': state,
+        'response_mode': 'query'
+    }
+
+    auth_url = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' + urllib.parse.urlencode(auth_params)
+
+    print(f"DEBUG: Redirect URI being sent: {redirect_uri}")
+    print(f"DEBUG: State generated: {state}")
+
+    return redirect(auth_url)
 
 @app.route('/microsoft-auth')
 def microsoft_auth():
     try:
-        token = microsoft.authorize_access_token()
+        import requests
 
-        # Get user information from Microsoft Graph API
-        graph_data = microsoft.get('me').json()
+        # Verify state to prevent CSRF
+        received_state = request.args.get('state')
+        stored_state = session.get('oauth_state')
 
+        if not received_state or not stored_state or received_state != stored_state:
+            logger.error("State mismatch - CSRF protection triggered")
+            return "Authentication failed: Invalid state", 400
+
+        # Clear the state from session
+        session.pop('oauth_state', None)
+
+        # Get authorization code
+        code = request.args.get('code')
+        error = request.args.get('error')
+
+        if error:
+            logger.error(f"OAuth error: {error}")
+            return f"Authentication failed: {error}", 400
+
+        if not code:
+            logger.error("No authorization code received")
+            return "Authentication failed: No authorization code", 400
+
+        # Exchange code for token
+        redirect_uri = url_for('microsoft_auth', _external=True).replace('http://', 'https://')
+
+        token_data = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': redirect_uri,
+            'client_id': os.getenv("MICROSOFT_CLIENT_ID"),
+            'client_secret': os.getenv("MICROSOFT_CLIENT_SECRET"),
+        }
+
+        token_response = requests.post(
+            'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+            data=token_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+
+        if token_response.status_code != 200:
+            logger.error(f"Token exchange failed: {token_response.text}")
+            return f"Token exchange failed: {token_response.status_code}", 400
+
+        token = token_response.json()
+        access_token = token.get('access_token')
+
+        if not access_token:
+            logger.error("No access token in response")
+            return "Authentication failed: No access token", 400
+
+        # Get user information from Microsoft Graph
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+
+        user_response = requests.get('https://graph.microsoft.com/v1.0/me', headers=headers)
+
+        if user_response.status_code != 200:
+            logger.error(f"Failed to get user info: {user_response.text}")
+            return f"Failed to get user information: {user_response.status_code}", 400
+
+        graph_data = user_response.json()
+
+        # Continue with your existing user logic
         email = graph_data.get('mail', graph_data.get('userPrincipalName'))
         if not email:
             logger.error("Could not retrieve email from Microsoft account")
             return "Could not retrieve email from Microsoft account", 400
-
-        # Optional: Restrict to specific company domains
-        # allowed_domains = ['yourcompany.com', 'subsidiary.com']
-        # domain = email.split('@')[1]
-        # if domain not in allowed_domains:
-        #     return "Access denied: Only company email addresses are allowed", 403
 
         # Check if user exists
         user_data = mongo.db.users.find_one({"email": email})
