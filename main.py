@@ -299,9 +299,16 @@ def microsoft_auth():
 
             logger.info(f"Updated existing user: {email}")
 
-        # Login the user
+        # Login the user with a fresh session
+        session.clear()  # Clear any existing session data first
         user = User(user_data)
         login_user(user)
+        
+        # Add user-specific identifiers to the session
+        session['user_id'] = str(user_data['_id'])
+        session['user_email'] = email
+        session['login_time'] = datetime.now().isoformat()
+        session.modified = True  # Ensure the session is saved
 
         return redirect(url_for('index'))
 
