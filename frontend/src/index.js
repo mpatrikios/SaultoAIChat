@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles/main.css';
 import './styles/message-styles.css';
+import './styles/user-profile.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
