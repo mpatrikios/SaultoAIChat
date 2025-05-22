@@ -415,11 +415,13 @@ def add_message():
         if not conversation:
             return jsonify({'error': 'Conversation not found or access denied'}), 404
 
-        # Add user message to the conversation
+        # Add user message to the conversation with user metadata
         user_message = {
             'id': str(uuid.uuid4()),
             'text': message_text,
             'sender': 'user',
+            'sender_id': str(current_user.id),  # Add sender ID for improved tracking
+            'sender_email': current_user.email,  # Associate email for audit logs
             'timestamp': datetime.now().isoformat(),
             'file': file_info
         }
@@ -431,25 +433,40 @@ def add_message():
 
         ai_response_text = generate_ai_response(message_with_file_info, conversation.get('messages', []))
 
-        # Add AI response to the conversation
+        # Add AI response to the conversation with user context
         ai_message = {
             'id': str(uuid.uuid4()),
             'text': ai_response_text,
             'sender': 'bot',
+            'for_user_id': str(current_user.id),  # Track which user this response was generated for
             'timestamp': datetime.now().isoformat()
         }
 
-        # Update the conversation with both messages
+        # Update the conversation with both messages - ensure user can only modify their own conversations
         mongo.db.conversations.update_one(
-            {"_id": ObjectId(conversation_id)},
+            {
+                "_id": ObjectId(conversation_id),
+                "user_id": ObjectId(current_user.id)  # Critical security check
+            },
             {
                 "$push": {"messages": {"$each": [user_message, ai_message]}},
-                "$set": {"updated_at": datetime.now()}
+                "$set": {
+                    "updated_at": datetime.now(),
+                    "last_accessed_by": current_user.email,  # Track for audit purposes
+                    "access_timestamp": datetime.now()
+                }
             }
         )
 
-        # Retrieve the updated conversation
-        updated_conversation = mongo.db.conversations.find_one({"_id": ObjectId(conversation_id)})
+        # Retrieve the updated conversation - with user verification
+        updated_conversation = mongo.db.conversations.find_one({
+            "_id": ObjectId(conversation_id),
+            "user_id": ObjectId(current_user.id)  # Ensure we only return the user's own conversation
+        })
+        
+        if not updated_conversation:
+            return jsonify({'error': 'Conversation not found or access denied'}), 404
+            
         updated_conversation['id'] = str(updated_conversation['_id'])
         del updated_conversation['_id']
 
