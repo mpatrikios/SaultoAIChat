@@ -19,106 +19,106 @@ from bson.objectid import ObjectId
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-    load_dotenv()
-    app = Flask(__name__, static_folder='static/react-build', static_url_path='')
+load_dotenv()
+app = Flask(__name__, static_folder='static/react-build', static_url_path='')
 
-    # Basic Flask Configuration
-    CORS(app)
-    app.secret_key = os.environ.get("SESSION_SECRET", "sumersault-dev-secret")
+# Basic Flask Configuration
+CORS(app)
+app.secret_key = os.environ.get("SESSION_SECRET", "sumersault-dev-secret")
 
-    # Session configuration for OAuth state management
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['SESSION_PERMANENT'] = False
-    app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_KEY_PREFIX'] = 'sumersault:'
+# Session configuration for OAuth state management
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'sumersault:'
 
-    # OAuth configuration to handle CSRF and state
-    app.config['AUTHLIB_INSECURE_TRANSPORT'] = True  # Only for development
-    app.config['PREFERRED_URL_SCHEME'] = 'https'
+# OAuth configuration to handle CSRF and state
+app.config['AUTHLIB_INSECURE_TRANSPORT'] = True  # Only for development
+app.config['PREFERRED_URL_SCHEME'] = 'https'
 
-    # MongoDB Configuration
-    app.config["MONGO_URI"] = os.environ.get("MONGO_URI", "mongodb://localhost:27017/sumersault")
-    mongo = PyMongo(app)
+# MongoDB Configuration
+app.config["MONGO_URI"] = os.environ.get("MONGO_URI", "mongodb://localhost:27017/sumersault")
+mongo = PyMongo(app)
 
-    # Login Manager Setup
-    login_manager = LoginManager()
-    login_manager.init_app(app)
-    login_manager.login_view = "login"
+# Login Manager Setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
-    # OAuth Setup - Microsoft Only (ONLY ONE REGISTRATION)
-    oauth = OAuth(app)
+# OAuth Setup - Microsoft Only (ONLY ONE REGISTRATION)
+oauth = OAuth(app)
 
-    # Configure Microsoft OAuth (Azure AD) - SINGLE REGISTRATION
-    microsoft = oauth.register(
-        name='microsoft',
-        client_id=os.getenv("MICROSOFT_CLIENT_ID"),
-        client_secret=os.getenv("MICROSOFT_CLIENT_SECRET"),
-        access_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token',
-        authorize_url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-        api_base_url='https://graph.microsoft.com/v1.0/',
-        client_kwargs={
-            'scope': 'openid email profile User.Read',
-            'response_type': 'code'
-        },
-        server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration'
+# Configure Microsoft OAuth (Azure AD) - SINGLE REGISTRATION
+microsoft = oauth.register(
+    name='microsoft',
+    client_id=os.getenv("MICROSOFT_CLIENT_ID"),
+    client_secret=os.getenv("MICROSOFT_CLIENT_SECRET"),
+    access_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    authorize_url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+    api_base_url='https://graph.microsoft.com/v1.0/',
+    client_kwargs={
+        'scope': 'openid email profile User.Read',
+        'response_type': 'code'
+    },
+    server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration'
+)
+
+# File upload configuration
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'json', 'zip', 
+                     'py', 'js', 'html', 'css', 'c', 'cpp', 'h', 'java', 'rb', 'php', 'xml', 'md'}
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+
+# Ensure upload directory exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Initialize OpenAI client
+try:
+    client = AzureOpenAI(
+        api_key=os.getenv("AZURE_OPENAI_KEY"),
+        api_version="2024-12-01-preview",
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
     )
-
-    # File upload configuration
-    UPLOAD_FOLDER = 'uploads'
-    ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'json', 'zip', 
-                         'py', 'js', 'html', 'css', 'c', 'cpp', 'h', 'java', 'rb', 'php', 'xml', 'md'}
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-
-    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-    app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
-
-    # Ensure upload directory exists
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-    def allowed_file(filename):
-        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-    # Initialize OpenAI client
-    try:
-        client = AzureOpenAI(
-            api_key=os.getenv("AZURE_OPENAI_KEY"),
-            api_version="2024-12-01-preview",
-            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
-        )
-        logger.info("Azure OpenAI client initialized successfully")
-    except Exception as e:
-        logger.error(f"Error initializing Azure OpenAI client: {str(e)}")
-        client = None
+    logger.info("Azure OpenAI client initialized successfully")
+except Exception as e:
+    logger.error(f"Error initializing Azure OpenAI client: {str(e)}")
+    client = None
 
 # User class for Flask-Login
-    class User(UserMixin):
-        def __init__(self, user_data):
-            self.id = str(user_data['_id'])
-            self.email = user_data['email']
-            self.name = user_data.get('name', '')
-            self.company = self._extract_company_from_email(user_data['email'])
-            self.job_title = user_data.get('job_title', '')
-            self.department = user_data.get('department', '')
-            self.role = user_data.get('role', 'user')
-            self.microsoft_id = user_data.get('microsoft_id', '')
+class User(UserMixin):
+    def __init__(self, user_data):
+        self.id = str(user_data['_id'])
+        self.email = user_data['email']
+        self.name = user_data.get('name', '')
+        self.company = self._extract_company_from_email(user_data['email'])
+        self.job_title = user_data.get('job_title', '')
+        self.department = user_data.get('department', '')
+        self.role = user_data.get('role', 'user')
+        self.microsoft_id = user_data.get('microsoft_id', '')
     
-        def get_id(self):
-            return self.id
+    def get_id(self):
+        return self.id
     
-        def _extract_company_from_email(self, email):
-            """Extract company name from email domain"""
-            if not email or '@' not in email:
-                return ''
+    def _extract_company_from_email(self, email):
+        """Extract company name from email domain"""
+        if not email or '@' not in email:
+            return ''
     
-            domain = email.split('@')[1]
-            # Remove common email providers that don't represent companies
-            common_providers = ['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'aol.com', 'icloud.com']
-            if domain in common_providers:
-                return ''
+        domain = email.split('@')[1]
+        # Remove common email providers that don't represent companies
+        common_providers = ['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'aol.com', 'icloud.com']
+        if domain in common_providers:
+            return ''
     
-            # Otherwise, use the domain as company name
-            company_name = domain.split('.')[0].capitalize()
-            return company_name
+        # Otherwise, use the domain as company name
+        company_name = domain.split('.')[0].capitalize()
+        return company_name
     
 @login_manager.user_loader
 def load_user(user_id):
