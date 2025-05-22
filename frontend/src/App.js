@@ -16,9 +16,13 @@ function App() {
 
   // Handle conversation selection and creation of initial conversation
   useEffect(() => {
-    // If conversations are loaded but the list is empty, create a new one
-    // This ensures the sidebar is never empty
-    if (conversations.length === 0 && !isLoading) {
+    // Only create a new conversation if it's our first time loading the app
+    // and there are no conversations
+    const isFirstLoad = sessionStorage.getItem('hasInitializedConversations') !== 'true';
+    
+    if (conversations.length === 0 && !isLoading && isFirstLoad) {
+      // Mark that we've initialized conversations so we don't create new ones on reload
+      sessionStorage.setItem('hasInitializedConversations', 'true');
       createNewConversation();
     } 
     // If we have conversations and none is selected, select the first one
