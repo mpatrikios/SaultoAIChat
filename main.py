@@ -2,7 +2,7 @@
 import os
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, render_template
 from flask_cors import CORS
 from flask_pymongo import PyMongo
@@ -25,12 +25,12 @@ app = Flask(__name__, static_folder='static/react-build', static_url_path='')
 # Basic Flask Configuration
 CORS(app)
 app.secret_key = os.environ.get("SESSION_SECRET", "sumersault-dev-secret")
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # 7-day session lifetime
-app.config['SESSION_COOKIE_NAME'] = 'sumersault_session'  # Unique name helps avoid conflicts
-app.config['SESSION_COOKIE_SECURE'] = False  # Allow non-HTTPS during development
-app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to cookies
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
-app.config['SESSION_REFRESH_EACH_REQUEST'] = True  # Update session cookie on each request
+
+# Session configuration for OAuth state management
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'sumersault:'
 
 # OAuth configuration to handle CSRF and state
 app.config['AUTHLIB_INSECURE_TRANSPORT'] = True  # Only for development
@@ -299,16 +299,9 @@ def microsoft_auth():
 
             logger.info(f"Updated existing user: {email}")
 
-        # Login the user with a fresh session
-        session.clear()  # Clear any existing session data first
+        # Login the user
         user = User(user_data)
         login_user(user)
-        
-        # Add user-specific identifiers to the session
-        session['user_id'] = str(user_data['_id'])
-        session['user_email'] = email
-        session['login_time'] = datetime.now().isoformat()
-        session.modified = True  # Ensure the session is saved
 
         return redirect(url_for('index'))
 
@@ -319,17 +312,7 @@ def microsoft_auth():
 @app.route('/logout')
 @login_required
 def logout():
-    # Get user info for logging before logout
-    user_email = current_user.email if current_user.is_authenticated else "unknown"
-    
-    # Clear the user's session completely
     logout_user()
-    session.clear()
-    
-    # Log the logout for security auditing
-    logger.info(f"User logged out: {user_email}")
-    
-    # Redirect to login page
     return redirect(url_for('login'))
 
 # API routes for the React frontend
