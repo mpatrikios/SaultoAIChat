@@ -69,24 +69,6 @@ login_manager.login_view = "login"
 # OAuth Setup - Microsoft Only (ONLY ONE REGISTRATION)
 oauth = OAuth(app)
 
-# Configure Microsoft OAuth (Azure AD) - SINGLE REGISTRATION
-# microsoft = oauth.register(
-#     name='microsoft',
-#     client_id=os.getenv("MICROSOFT_CLIENT_ID"),
-#     client_secret=os.getenv("MICROSOFT_CLIENT_SECRET"),
-#     access_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token',
-#     authorize_url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-#     api_base_url='https://graph.microsoft.com/v1.0/',
-#     client_kwargs={
-#         'scope': 'openid email profile User.Read',
-#         'response_type': 'code'
-#     },
-#     server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
-#     # Add this to handle the issuer validation issue
-#     jwks_uri='https://login.microsoftonline.com/common/discovery/v2.0/keys',
-#     # Configure token validation
-#     token_endpoint_auth_method='client_secret_post'
-# )
 
 # File upload configuration
 UPLOAD_FOLDER = 'uploads'
@@ -628,7 +610,39 @@ def generate_ai_response(user_message, conversation_history):
         if not conversation_history or conversation_history[-1].get('sender') != 'user' or conversation_history[-1].get('text') != user_message:
             messages.append({"role": "user", "content": user_message})
 
-        logger.info(f"Sending request to Azure OpenAI with {len(messages)} messages")
+        # ========== DETAILED LOGGING STARTS HERE ==========
+
+        logger.info("=" * 80)
+        logger.info("🚀 AZURE OPENAI API REQUEST")
+        logger.info("=" * 80)
+
+        # Log request details
+        logger.info(f"📍 Endpoint: {os.getenv('AZURE_OPENAI_ENDPOINT')}")
+        logger.info(f"🤖 Model: {os.getenv('AZURE_OPENAI_DEPLOYMENT_NAME')}")
+        logger.info(f"👤 User: {current_user.name} ({current_user.email})")
+        logger.info(f"💬 Total Messages: {len(messages)}")
+        logger.info(f"📝 Latest User Message: {user_message[:100]}...")
+
+        # Log the full payload (be careful with sensitive data)
+        logger.info("📦 REQUEST PAYLOAD:")
+        request_payload = {
+            "model": os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
+            "messages": messages,
+            "max_tokens": 1000,
+            "temperature": 0.7
+        }
+
+        # Log each message in the conversation
+        for i, msg in enumerate(messages):
+            logger.info(f"  Message {i+1} ({msg['role']}): {msg['content'][:150]}...")
+
+        logger.info(f"⚙️  Parameters: max_tokens=1000, temperature=0.7")
+
+        # Record start time
+        import time
+        start_time = time.time()
+
+        logger.info("⏳ Sending request to Azure OpenAI...")
 
         # Call the Azure OpenAI API
         response = client.chat.completions.create(
@@ -638,15 +652,62 @@ def generate_ai_response(user_message, conversation_history):
             temperature=0.7
         )
 
-        # Extract and return the assistant's response
+        # Calculate response time
+        response_time = time.time() - start_time
+
+        # ========== DETAILED RESPONSE LOGGING ==========
+
+        logger.info("=" * 80)
+        logger.info("📥 AZURE OPENAI API RESPONSE")
+        logger.info("=" * 80)
+
+        logger.info(f"⏱️  Response Time: {response_time:.2f} seconds")
+        logger.info(f"🆔 Request ID: {getattr(response, 'id', 'N/A')}")
+        logger.info(f"🏷️  Model Used: {getattr(response, 'model', 'N/A')}")
+        logger.info(f"📊 Usage Stats:")
+
+        # Log token usage if available
+        if hasattr(response, 'usage') and response.usage:
+            usage = response.usage
+            logger.info(f"   📝 Prompt Tokens: {usage.prompt_tokens}")
+            logger.info(f"   🔤 Completion Tokens: {usage.completion_tokens}")
+            logger.info(f"   🔢 Total Tokens: {usage.total_tokens}")
+
+        # Extract and log the response
         ai_response = response.choices[0].message.content
-        logger.info(f"Generated AI response: {ai_response[:100]}...")
+        finish_reason = response.choices[0].finish_reason
+
+        logger.info(f"🏁 Finish Reason: {finish_reason}")
+        logger.info(f"💭 AI Response Length: {len(ai_response)} characters")
+        logger.info(f"🤖 AI Response Preview: {ai_response[:200]}...")
+
+        # Log full response (be careful in production)
+        logger.info("📄 FULL AI RESPONSE:")
+        logger.info(f"{ai_response}")
+
+        logger.info("=" * 80)
+        logger.info("✅ AZURE OPENAI REQUEST COMPLETED SUCCESSFULLY")
+        logger.info("=" * 80)
+
         return ai_response
 
     except Exception as e:
-        logger.error(f"Error generating AI response: {str(e)}")
-        return f"I apologize, but I encountered an error while processing your request. Please try again later. Error: {str(e)}"
+        logger.error("=" * 80)
+        logger.error("❌ AZURE OPENAI API ERROR")
+        logger.error("=" * 80)
+        logger.error(f"🚨 Error Type: {type(e).__name__}")
+        logger.error(f"📝 Error Message: {str(e)}")
+        logger.error(f"👤 User: {current_user.name} ({current_user.email})")
+        logger.error(f"💬 User Message: {user_message}")
 
+        # Log full traceback
+        import traceback
+        logger.error(f"🔍 Full Traceback:")
+        logger.error(traceback.format_exc())
+        logger.error("=" * 80)
+
+        return f"I apologize, but I encountered an error while processing your request. Please try again later. Error: {str(e)}"
+        
 # Admin routes for user management (protected by role check)
 @app.route('/admin/users', methods=['GET'])
 @login_required
