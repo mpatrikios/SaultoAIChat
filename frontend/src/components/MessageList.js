@@ -176,17 +176,7 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
         </div>
       ))}
 
-      {isLoading && (
-        <div className="message bot typing-message">
-          <div className="message-content">
-            <div className="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 });
