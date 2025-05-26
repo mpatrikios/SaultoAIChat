@@ -821,8 +821,8 @@ def chat_stream():
                 }
                 
                 # Add file info if present
-                if file_data:
-                    user_msg["file"] = file_data
+                if 'file' in data and data['file']:
+                    user_msg["file"] = data['file']
                 
                 # Prepare messages for the AI
                 messages = [{"role": "system", "content": f"You are a helpful Sumersault assistant for {current_user.username} at {current_user.company}. You are branded with green colors and provide accurate, professional, and helpful assistance."}]
