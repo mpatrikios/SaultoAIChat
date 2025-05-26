@@ -836,7 +836,7 @@ def chat_stream():
                 
                 # Stream the response
                 for chunk in response:
-                    if chunk.choices[0].delta.content is not None:
+                    if chunk.choices and len(chunk.choices) > 0 and chunk.choices[0].delta.content is not None:
                         content = chunk.choices[0].delta.content
                         yield f"data: {json.dumps({'content': content})}\n\n"
                 
