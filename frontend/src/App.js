@@ -214,8 +214,7 @@ function App() {
                   )
                 }));
                 
-                // Just refresh conversations - no need to save again since streaming handles it
-                fetchConversations();
+                // Streaming is complete - no need to reload from database
                 break;
               }
               
