@@ -214,8 +214,7 @@ function App() {
                   )
                 }));
                 
-                // Save the completed conversation
-                await saveCompletedMessage(messageText, aiResponseText, file);
+                // Just refresh conversations - no need to save again since streaming handles it
                 fetchConversations();
                 break;
               }
@@ -231,8 +230,16 @@ function App() {
       }
     } catch (error) {
       console.error('Error with streaming:', error);
-      // Fallback to regular API if streaming fails
-      await fallbackToRegularAPI(messageText, file);
+      
+      // Show error in the AI message instead of fallback
+      setCurrentConversation(prev => ({
+        ...prev,
+        messages: prev.messages.map(msg => 
+          msg.id === aiMessageId 
+            ? { ...msg, text: 'Sorry, I encountered an error. Please try again.', streaming: false }
+            : msg
+        )
+      }));
     } finally {
       setIsLoading(false);
     }
