@@ -3,7 +3,7 @@ import os
 import logging
 import uuid
 from datetime import datetime
-from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, render_template
+from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, render_template, Response
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from bson.objectid import ObjectId
 import secrets
 import urllib.parse
+import json
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -644,10 +645,11 @@ def generate_ai_response(user_message, conversation_history):
 
         logger.info("⏳ Sending request to Azure OpenAI...")
 
-        # Call the Azure OpenAI API
+        # Call the Azure OpenAI API with streaming enabled
         response = client.chat.completions.create(
             model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
             messages=messages,
+            stream=True,
             max_tokens=1000,
             temperature=0.7
         )
@@ -783,6 +785,81 @@ def ensure_admin_exists():
             logger.info(f"Promoted existing user to admin: {admin_email}")
         else:
             logger.info(f"Admin user {admin_email} not found. They will be created as admin when they first log in.")
+
+@app.route('/api/chat/stream', methods=['POST'])
+@login_required
+def chat_stream():
+    """Streaming chat endpoint for thinking aloud feature"""
+    try:
+        data = request.get_json()
+        user_message = data.get('message', '')
+        conversation_id = data.get('conversation_id', '')
+        
+        if not user_message:
+            return jsonify({'error': 'No message provided'}), 400
+            
+        if not conversation_id:
+            return jsonify({'error': 'No conversation ID provided'}), 400
+        
+        # Verify the conversation belongs to the current user
+        conversation = mongo.db.conversations.find_one({
+            "_id": ObjectId(conversation_id),
+            "user_id": ObjectId(current_user.id)
+        })
+        
+        if not conversation:
+            return jsonify({'error': 'Conversation not found or access denied'}), 404
+        
+        def generate_stream():
+            try:
+                # Prepare messages for the AI
+                messages = [{"role": "system", "content": "You are a helpful assistant."}]
+                
+                # Add conversation history
+                for msg in conversation.get('messages', []):
+                    if msg.get('sender') == 'user':
+                        messages.append({"role": "user", "content": msg.get('text', '')})
+                    elif msg.get('sender') == 'bot':
+                        messages.append({"role": "assistant", "content": msg.get('text', '')})
+                
+                # Add the current user message
+                messages.append({"role": "user", "content": user_message})
+                
+                # Call Azure OpenAI with streaming
+                response = client.chat.completions.create(
+                    model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
+                    messages=messages,
+                    stream=True,
+                    max_tokens=1000,
+                    temperature=0.7
+                )
+                
+                # Stream the response
+                for chunk in response:
+                    if chunk.choices[0].delta.content is not None:
+                        content = chunk.choices[0].delta.content
+                        yield f"data: {json.dumps({'content': content})}\n\n"
+                
+                # Send completion signal
+                yield f"data: {json.dumps({'done': True})}\n\n"
+                
+            except Exception as e:
+                logger.error(f"Error in streaming: {str(e)}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        
+        return Response(
+            generate_stream(),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'Access-Control-Allow-Origin': '*'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in streaming chat endpoint: {str(e)}")
+        return jsonify({'error': 'Failed to process streaming chat request'}), 500
 
 if __name__ == "__main__":
     # Ensure admin user exists on startup
