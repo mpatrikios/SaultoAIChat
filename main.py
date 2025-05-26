@@ -856,10 +856,12 @@ def chat_stream():
                 
                 # Stream the response
                 for chunk in response:
-                    if chunk.choices and len(chunk.choices) > 0 and chunk.choices[0].delta.content is not None:
-                        content = chunk.choices[0].delta.content
-                        ai_response_text += content
-                        yield f"data: {json.dumps({'content': content})}\n\n"
+                    if hasattr(chunk, 'choices') and len(chunk.choices) > 0:
+                        delta = chunk.choices[0].delta
+                        if hasattr(delta, 'content') and delta.content is not None:
+                            content = delta.content
+                            ai_response_text += content
+                            yield f"data: {json.dumps({'content': content})}\n\n"
                 
                 # Save both messages to the database
                 ai_msg = {
