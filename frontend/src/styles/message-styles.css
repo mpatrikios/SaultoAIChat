@@ -51,6 +51,23 @@
   color: white;
 }
 
+/* Thinking aloud indicator styles */
+.thinking-indicator {
+  display: inline;
+  margin-left: 2px;
+}
+
+.cursor-blink {
+  animation: blink 1s infinite;
+  font-weight: bold;
+  color: var(--sumersault-accent-green);
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
 .message.user {
   align-items: flex-end;
 }

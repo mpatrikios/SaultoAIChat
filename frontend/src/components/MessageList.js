@@ -151,6 +151,13 @@ const MessageList = forwardRef(({ messages, isLoading }, ref) => {
               >
                 {message.text}
               </ReactMarkdown>
+              
+              {/* Show thinking indicator for streaming messages */}
+              {message.streaming && (
+                <div className="thinking-indicator">
+                  <span className="cursor-blink">|</span>
+                </div>
+              )}
             )}
             
             <div className="message-actions">

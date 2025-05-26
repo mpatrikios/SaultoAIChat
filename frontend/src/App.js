@@ -139,11 +139,131 @@ function App() {
       messages: updatedMessages
     });
     
-    // Show typing indicator
+    // Add a placeholder AI message that will stream in real-time
+    const aiMessageId = `ai-${Date.now()}`;
+    const aiMessage = {
+      id: aiMessageId,
+      sender: 'bot',
+      text: '',
+      timestamp: new Date().toISOString(),
+      streaming: true
+    };
+    
+    setCurrentConversation({
+      ...currentConversation,
+      messages: [...updatedMessages, aiMessage]
+    });
+    
     setIsLoading(true);
     
     try {
-      // Create FormData for file upload
+      // Use streaming endpoint for thinking aloud effect
+      const response = await fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageText,
+          conversation_id: currentConversation.id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get streaming response');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiResponseText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.content) {
+                aiResponseText += data.content;
+                
+                // Update the AI message in real-time as it streams
+                setCurrentConversation(prev => ({
+                  ...prev,
+                  messages: prev.messages.map(msg => 
+                    msg.id === aiMessageId 
+                      ? { ...msg, text: aiResponseText, streaming: true }
+                      : msg
+                  )
+                }));
+              }
+              
+              if (data.done) {
+                // Mark streaming as complete and save to database
+                setCurrentConversation(prev => ({
+                  ...prev,
+                  messages: prev.messages.map(msg => 
+                    msg.id === aiMessageId 
+                      ? { ...msg, streaming: false }
+                      : msg
+                  )
+                }));
+                
+                // Save the completed conversation
+                await saveCompletedMessage(messageText, aiResponseText, file);
+                fetchConversations();
+                break;
+              }
+              
+              if (data.error) {
+                throw new Error(data.error);
+              }
+            } catch (e) {
+              // Skip malformed JSON lines
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error with streaming:', error);
+      // Fallback to regular API if streaming fails
+      await fallbackToRegularAPI(messageText, file);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to save completed message to database
+  const saveCompletedMessage = async (userMessage, aiResponse, file = null) => {
+    try {
+      const formData = new FormData();
+      formData.append('conversation_id', currentConversation.id);
+      formData.append('message', userMessage);
+      
+      if (file) {
+        formData.append('file', file);
+      }
+      
+      // Since we already have the AI response from streaming, we'll use the regular endpoint
+      // but we need to update the backend to handle this properly
+      await axios.post('/api/message', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    } catch (error) {
+      console.error('Error saving completed message:', error);
+    }
+  };
+
+  // Fallback function if streaming fails
+  const fallbackToRegularAPI = async (messageText, file) => {
+    try {
       const formData = new FormData();
       formData.append('conversation_id', currentConversation.id);
       formData.append('message', messageText);
@@ -152,23 +272,16 @@ function App() {
         formData.append('file', file);
       }
       
-      // Send the message to the server with the file if present
       const response = await axios.post('/api/message', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       
-      // Update with the server response
       setCurrentConversation(response.data.conversation);
-      
-      // Refresh the conversation list to update previews
       fetchConversations();
     } catch (error) {
-      console.error('Error sending message:', error);
-      // If there's an error, keep the user message in the UI
-    } finally {
-      setIsLoading(false);
+      console.error('Error with fallback API:', error);
     }
   };
 
