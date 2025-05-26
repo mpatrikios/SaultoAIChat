@@ -812,8 +812,20 @@ def chat_stream():
         
         def generate_stream():
             try:
+                # Save the user message first
+                user_msg = {
+                    "id": str(ObjectId()),
+                    "text": user_message,
+                    "sender": "user",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+                
+                # Add file info if present
+                if file_data:
+                    user_msg["file"] = file_data
+                
                 # Prepare messages for the AI
-                messages = [{"role": "system", "content": "You are a helpful assistant."}]
+                messages = [{"role": "system", "content": f"You are a helpful Sumersault assistant for {current_user.username} at {current_user.company}. You are branded with green colors and provide accurate, professional, and helpful assistance."}]
                 
                 # Add conversation history
                 for msg in conversation.get('messages', []):
@@ -834,11 +846,29 @@ def chat_stream():
                     temperature=0.7
                 )
                 
+                # Collect the streamed response
+                ai_response_text = ""
+                
                 # Stream the response
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0 and chunk.choices[0].delta.content is not None:
                         content = chunk.choices[0].delta.content
+                        ai_response_text += content
                         yield f"data: {json.dumps({'content': content})}\n\n"
+                
+                # Save both messages to the database
+                ai_msg = {
+                    "id": str(ObjectId()),
+                    "text": ai_response_text,
+                    "sender": "bot",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+                
+                # Update the conversation with both messages
+                mongo.db.conversations.update_one(
+                    {"_id": ObjectId(conversation_id)},
+                    {"$push": {"messages": {"$each": [user_msg, ai_msg]}}}
+                )
                 
                 # Send completion signal
                 yield f"data: {json.dumps({'done': True})}\n\n"

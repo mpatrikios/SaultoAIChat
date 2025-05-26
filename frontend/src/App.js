@@ -268,29 +268,7 @@ function App() {
     }
   };
 
-  // Fallback function if streaming fails
-  const fallbackToRegularAPI = async (messageText, file) => {
-    try {
-      const formData = new FormData();
-      formData.append('conversation_id', currentConversation.id);
-      formData.append('message', messageText);
-      
-      if (file) {
-        formData.append('file', file);
-      }
-      
-      const response = await axios.post('/api/message', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      setCurrentConversation(response.data.conversation);
-      fetchConversations();
-    } catch (error) {
-      console.error('Error with fallback API:', error);
-    }
-  };
+
 
   return (
     <div className="app-container">
