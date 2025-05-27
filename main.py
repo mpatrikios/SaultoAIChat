@@ -794,6 +794,7 @@ def chat_stream():
         data = request.get_json()
         user_message = data.get('message', '')
         conversation_id = data.get('conversation_id', '')
+        file_info = data.get('file', None)
         
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
@@ -821,8 +822,8 @@ def chat_stream():
                 }
                 
                 # Add file info if present
-                if 'file' in data and data['file']:
-                    user_msg["file"] = data['file']
+                if file_info:
+                    user_msg["file"] = file_info
                 
                 # Prepare messages for the AI
                 if current_user and hasattr(current_user, 'username') and hasattr(current_user, 'company'):
@@ -839,8 +840,12 @@ def chat_stream():
                     elif msg.get('sender') == 'bot':
                         messages.append({"role": "assistant", "content": msg.get('text', '')})
                 
-                # Add the current user message
-                messages.append({"role": "user", "content": user_message})
+                # Add the current user message with file context if present
+                message_content = user_message
+                if file_info:
+                    message_content += f"\n[File attached: {file_info['name']} ({file_info['type']}, {file_info['size']} bytes)]"
+                
+                messages.append({"role": "user", "content": message_content})
                 
                 # Call Azure OpenAI with streaming
                 response = client.chat.completions.create(
