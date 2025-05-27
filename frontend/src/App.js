@@ -165,8 +165,7 @@ function App() {
         },
         body: JSON.stringify({
           message: messageText,
-          conversation_id: currentConversation.id,
-          file: fileInfo
+          conversation_id: currentConversation.id
         })
       });
 

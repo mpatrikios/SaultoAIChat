@@ -30,12 +30,9 @@ const Header = ({ title }) => {
 
   return (
     <div className="chat-header">
-      <div className="chat-title">Sumersault Chat</div>
+      <div className="chat-title">SaultoChat</div>
       
       <div className="header-right">
-        <div className="logo-container">
-          <SumersaultLogo height={45} />
-        </div>
         
         {user && (
           <div className="user-profile">
