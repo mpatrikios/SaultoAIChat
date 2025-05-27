@@ -522,6 +522,37 @@ def get_user_profile():
         'microsoft_id': current_user.microsoft_id
     })
 
+@app.route('/api/upload', methods=['POST'])
+@login_required  
+def upload_file():
+    """Upload a file for processing"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Add timestamp to prevent filename conflicts
+        timestamp = str(int(time.time()))
+        filename = f"{timestamp}_{filename}"
+        
+        upload_dir = os.environ.get('UPLOAD_DIR', 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_path = os.path.join(upload_dir, filename)
+        file.save(file_path)
+        
+        return jsonify({
+            'message': 'File uploaded successfully',
+            'filename': filename,
+            'originalName': file.filename
+        })
+    
+    return jsonify({'error': 'File type not allowed'}), 400
+
 @app.route('/api/uploads/<filename>', methods=['GET'])
 @login_required
 def download_file(filename):
@@ -839,8 +870,25 @@ def chat_stream():
                     elif msg.get('sender') == 'bot':
                         messages.append({"role": "assistant", "content": msg.get('text', '')})
                 
-                # Add the current user message
-                messages.append({"role": "user", "content": user_message})
+                # Add the current user message with file content if present
+                message_content = user_message
+                if 'file' in data and data['file'] and 'uploadedPath' in data['file']:
+                    # Read file content if it's a text file
+                    file_path = os.path.join(os.environ.get('UPLOAD_DIR', 'uploads'), data['file']['uploadedPath'])
+                    if os.path.exists(file_path):
+                        try:
+                            # Try to read as text file
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                file_content = f.read()
+                            message_content = f"{user_message}\n\nAttached file '{data['file']['name']}' contents:\n{file_content}"
+                        except UnicodeDecodeError:
+                            # If not a text file, just mention the file
+                            message_content = f"{user_message}\n\nFile attached: {data['file']['name']} (binary file, {data['file']['size']} bytes)"
+                        except Exception as e:
+                            logger.error(f"Error reading file: {e}")
+                            message_content = f"{user_message}\n\nFile attached: {data['file']['name']} (could not read file contents)"
+                
+                messages.append({"role": "user", "content": message_content})
                 
                 # Call Azure OpenAI with streaming
                 response = client.chat.completions.create(

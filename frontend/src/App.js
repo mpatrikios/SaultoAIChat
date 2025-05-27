@@ -109,11 +109,28 @@ function App() {
     let fileInfo = null;
     
     if (file) {
-      fileInfo = {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      };
+      // Upload the file first
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (uploadResponse.ok) {
+          const uploadResult = await uploadResponse.json();
+          fileInfo = {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            uploadedPath: uploadResult.filename
+          };
+        }
+      } catch (error) {
+        console.error('File upload failed:', error);
+      }
       
       // If no message text but file attached, use the filename as message
       if (!messageText.trim()) {
