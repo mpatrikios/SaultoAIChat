@@ -95,7 +95,25 @@ function App() {
       // Refresh conversations on error to ensure UI is in sync with backend
       fetchConversations();
     }
-  };
+  }
+
+  const pinConversation = async (conversationId, pinned) => {
+    try {
+      await axios.patch(`/api/conversation/pin`, {
+        conversation_id: conversationId,
+        pinned: pinned
+      });
+      
+      // Update the conversation in the local state
+      setConversations(conversations.map(conv => 
+        conv.id === conversationId 
+          ? { ...conv, pinned: pinned }
+          : conv
+      ));
+    } catch (error) {
+      console.error('Error pinning conversation:', error);
+    }
+  };;
 
   const sendMessage = async (message, file = null) => {
     if (!currentConversation) return;
@@ -298,6 +316,7 @@ function App() {
         onConversationSelect={fetchConversation}
         onNewConversation={createNewConversation}
         onDeleteConversation={deleteConversation}
+        onPinConversation={pinConversation}
       />
       
       <div className="main-content">

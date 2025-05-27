@@ -141,6 +141,19 @@ body {
   transform: translateY(-1px);
 }
 
+.conversation-section-header {
+  padding: 8px 16px;
+  margin: 8px 0 4px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sumersault-accent-green);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .conversation-preview {
   font-size: 0.9rem;
   white-space: nowrap;
@@ -148,6 +161,51 @@ body {
   text-overflow: ellipsis;
   flex: 1;
   cursor: pointer;
+}
+
+.conversation-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.conversation-item:hover .conversation-actions {
+  opacity: 1;
+}
+
+.conversation-item.pinned {
+  border-color: var(--sumersault-accent-green);
+  background-color: rgba(87, 163, 154, 0.1);
+}
+
+.conversation-item.pinned .conversation-actions {
+  opacity: 0.7;
+}
+
+.pin-conversation-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pin-conversation-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.pin-conversation-btn.pinned {
+  color: var(--sumersault-accent-green);
+  opacity: 1;
 }
 
 .delete-conversation-btn {
