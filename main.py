@@ -884,13 +884,17 @@ def chat_stream():
                             # Try to read as text file
                             with open(file_path, 'r', encoding='utf-8') as f:
                                 file_content = f.read()
-                            message_content = f"{user_message}\n\nAttached file '{data['file']['name']}' contents:\n{file_content}"
+                            message_content = f"{user_message}\n\nHere is the content of the attached file '{data['file']['name']}':\n\n```\n{file_content}\n```"
                         except UnicodeDecodeError:
                             # If not a text file, just mention the file
-                            message_content = f"{user_message}\n\nFile attached: {data['file']['name']} (binary file, {data['file']['size']} bytes)"
+                            message_content = f"{user_message}\n\nFile attached: {data['file']['name']} (binary file, cannot display content)"
                         except Exception as e:
                             logger.error(f"Error reading file: {e}")
-                            message_content = f"{user_message}\n\nFile attached: {data['file']['name']} (could not read file contents)"
+                            message_content = f"{user_message}\n\nFile attached: {data['file']['name']} (error reading file: {str(e)})"
+                    else:
+                        message_content = f"{user_message}\n\nFile '{data['file']['name']}' was attached but file not found on server"
+                        
+                logger.info(f"Final message content being sent to AI: {message_content[:200]}...")
                 
                 messages.append({"role": "user", "content": message_content})
                 
