@@ -113,7 +113,7 @@ function App() {
     } catch (error) {
       console.error('Error pinning conversation:', error);
     }
-  };;
+  };
 
   const sendMessage = async (message, file = null) => {
     if (!currentConversation) return;

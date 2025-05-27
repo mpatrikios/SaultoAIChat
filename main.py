@@ -508,6 +508,37 @@ def delete_conversation():
         logger.error(f"Error deleting conversation: {str(e)}")
         return jsonify({'error': f'Failed to delete conversation: {str(e)}'}), 500
 
+@app.route('/api/conversation/pin', methods=['PATCH'])
+@login_required
+def pin_conversation():
+    """Pin or unpin a conversation"""
+    try:
+        data = request.get_json()
+        conversation_id = data.get('conversation_id')
+        pinned = data.get('pinned', False)
+        
+        if not conversation_id:
+            return jsonify({'error': 'Missing conversation ID'}), 400
+            
+        # Verify the conversation belongs to the current user and update pin status
+        result = mongo.db.conversations.update_one(
+            {
+                "_id": ObjectId(conversation_id),
+                "user_id": ObjectId(current_user.id)
+            },
+            {"$set": {"pinned": pinned}}
+        )
+        
+        if result.matched_count == 0:
+            return jsonify({'error': 'Conversation not found or access denied'}), 404
+            
+        logger.info(f"{'Pinned' if pinned else 'Unpinned'} conversation: {conversation_id}")
+        return jsonify({'success': True, 'pinned': pinned})
+        
+    except Exception as e:
+        logger.error(f"Error pinning conversation: {str(e)}")
+        return jsonify({'error': f'Failed to pin conversation: {str(e)}'}), 500
+
 @app.route('/api/user/profile', methods=['GET'])
 @login_required
 def get_user_profile():
