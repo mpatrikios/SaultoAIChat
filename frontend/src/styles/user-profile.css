@@ -3,18 +3,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  position: relative;
-}
-
-.header-right::before {
-  content: "";
-  position: absolute;
-  left: -20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1px;
-  height: 30px;
-  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.3), transparent);
 }
 
 .user-profile {
@@ -24,19 +12,15 @@
 .profile-button {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 25px;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(5px);
+  padding: 6px 10px;
+  border-radius: 20px;
+  transition: background-color 0.2s;
 }
 
 .profile-button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .avatar {
