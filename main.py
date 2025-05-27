@@ -843,7 +843,23 @@ def chat_stream():
                 # Add the current user message with file context if present
                 message_content = user_message
                 if file_info:
-                    message_content += f"\n[File attached: {file_info['name']} ({file_info['type']}, {file_info['size']} bytes)]"
+                    file_context = f"\n[File attached: {file_info['name']} ({file_info['type']}, {file_info['size']} bytes)]"
+                    
+                    # For text files, try to read and include content
+                    if file_info['type'].startswith('text/') or file_info['name'].endswith(('.txt', '.md', '.py', '.js', '.html', '.css', '.sh', '.json', '.xml', '.csv')):
+                        try:
+                            # Construct file path (assuming files are uploaded to uploads directory)
+                            file_path = os.path.join('uploads', file_info['name'])
+                            if os.path.exists(file_path):
+                                with open(file_path, 'r', encoding='utf-8') as f:
+                                    file_content = f.read()
+                                    file_context += f"\n\nFile content:\n```\n{file_content}\n```"
+                            else:
+                                file_context += "\n(File content not available - file may not be uploaded yet)"
+                        except Exception as e:
+                            file_context += f"\n(Could not read file content: {str(e)})"
+                    
+                    message_content += file_context
                 
                 messages.append({"role": "user", "content": message_content})
                 
