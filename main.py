@@ -1,4 +1,3 @@
-
 import os
 import logging
 import uuid
@@ -74,7 +73,7 @@ oauth = OAuth(app)
 # File upload configuration
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'json', 'zip', 
-                     'py', 'js', 'html', 'css', 'c', 'cpp', 'h', 'java', 'rb', 'php', 'xml', 'md'}
+     'py', 'js', 'html', 'css', 'c', 'cpp', 'h', 'java', 'rb', 'php', 'xml', 'md', 'sh'}
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -346,9 +345,9 @@ def get_conversation():
         del new_conversation['_id']
         return jsonify(new_conversation)
 
-@app.route('/api/message_disabled', methods=['POST'])
+@app.route('/api/message', methods=['POST'])
 @login_required
-def add_message_disabled():
+def add_message():
     file_info = None
     file_path = None
 
@@ -580,7 +579,7 @@ def generate_ai_response(user_message, conversation_history):
 
                     if os.path.exists(file_path):
                         # For text-based files, include their content in the message
-                        if file_type and ('text/' in file_type or file_name.lower().endswith(('.txt', '.md', '.csv', '.json', '.py', '.js', '.html', '.css', '.c', '.cpp', '.h', '.xml'))):
+                        if file_type and ('text/' in file_type or file_name.lower().endswith(('.txt', '.md', '.csv', '.json', '.py', '.js', '.html', '.css', '.c', '.cpp', '.h', '.xml', '.sh'))):
                             try:
                                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                                     file_content = f.read()
@@ -611,102 +610,27 @@ def generate_ai_response(user_message, conversation_history):
         if not conversation_history or conversation_history[-1].get('sender') != 'user' or conversation_history[-1].get('text') != user_message:
             messages.append({"role": "user", "content": user_message})
 
-        # ========== DETAILED LOGGING STARTS HERE ==========
+        logger.info(f"Sending request to Azure OpenAI with {len(messages)} messages")
 
-        logger.info("=" * 80)
-        logger.info("🚀 AZURE OPENAI API REQUEST")
-        logger.info("=" * 80)
-
-        # Log request details
-        logger.info(f"📍 Endpoint: {os.getenv('AZURE_OPENAI_ENDPOINT')}")
-        logger.info(f"🤖 Model: {os.getenv('AZURE_OPENAI_DEPLOYMENT_NAME')}")
-        logger.info(f"👤 User: {current_user.name} ({current_user.email})")
-        logger.info(f"💬 Total Messages: {len(messages)}")
-        logger.info(f"📝 Latest User Message: {user_message[:100]}...")
-
-        # Log the full payload (be careful with sensitive data)
-        logger.info("📦 REQUEST PAYLOAD:")
-        request_payload = {
-            "model": os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-            "messages": messages,
-            "max_tokens": 1000,
-            "temperature": 0.7
-        }
-
-        # Log each message in the conversation
-        for i, msg in enumerate(messages):
-            logger.info(f"  Message {i+1} ({msg['role']}): {msg['content'][:150]}...")
-
-        logger.info(f"⚙️  Parameters: max_tokens=1000, temperature=0.7")
-
-        # Record start time
-        import time
-        start_time = time.time()
-
-        logger.info("⏳ Sending request to Azure OpenAI...")
-
-        # Call the Azure OpenAI API with streaming enabled
+        # Call the Azure OpenAI API WITHOUT streaming for regular messages
         response = client.chat.completions.create(
             model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
             messages=messages,
-            stream=True,
+            stream=False,  # Set stream to False for non-streaming response
             max_tokens=1000,
             temperature=0.7
         )
 
-        # Calculate response time
-        response_time = time.time() - start_time
-
-        # ========== DETAILED RESPONSE LOGGING ==========
-
-        logger.info("=" * 80)
-        logger.info("📥 AZURE OPENAI API RESPONSE")
-        logger.info("=" * 80)
-
-        logger.info(f"⏱️  Response Time: {response_time:.2f} seconds")
-        logger.info(f"🆔 Request ID: {getattr(response, 'id', 'N/A')}")
-        logger.info(f"🏷️  Model Used: {getattr(response, 'model', 'N/A')}")
-        logger.info(f"📊 Usage Stats:")
-
-        # Log token usage if available
-        if hasattr(response, 'usage') and response.usage:
-            usage = response.usage
-            logger.info(f"   📝 Prompt Tokens: {usage.prompt_tokens}")
-            logger.info(f"   🔤 Completion Tokens: {usage.completion_tokens}")
-            logger.info(f"   🔢 Total Tokens: {usage.total_tokens}")
-
-        # Extract and log the response
+        # Extract and return the assistant's response
         ai_response = response.choices[0].message.content
-        finish_reason = response.choices[0].finish_reason
 
-        logger.info(f"🏁 Finish Reason: {finish_reason}")
-        logger.info(f"💭 AI Response Length: {len(ai_response)} characters")
-        logger.info(f"🤖 AI Response Preview: {ai_response[:200]}...")
-
-        # Log full response (be careful in production)
-        logger.info("📄 FULL AI RESPONSE:")
-        logger.info(f"{ai_response}")
-
-        logger.info("=" * 80)
-        logger.info("✅ AZURE OPENAI REQUEST COMPLETED SUCCESSFULLY")
-        logger.info("=" * 80)
-
+        logger.info(f"Generated AI response: {ai_response[:100]}...")
         return ai_response
 
     except Exception as e:
-        logger.error("=" * 80)
-        logger.error("❌ AZURE OPENAI API ERROR")
-        logger.error("=" * 80)
-        logger.error(f"🚨 Error Type: {type(e).__name__}")
-        logger.error(f"📝 Error Message: {str(e)}")
-        logger.error(f"👤 User: {current_user.name} ({current_user.email})")
-        logger.error(f"💬 User Message: {user_message}")
-
-        # Log full traceback
+        logger.error(f"Error generating AI response: {str(e)}")
         import traceback
-        logger.error(f"🔍 Full Traceback:")
         logger.error(traceback.format_exc())
-        logger.error("=" * 80)
 
         return f"I apologize, but I encountered an error while processing your request. Please try again later. Error: {str(e)}"
         
