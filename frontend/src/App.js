@@ -127,6 +127,9 @@ function App() {
             type: file.type,
             uploadedPath: uploadResult.filename
           };
+          console.log('File uploaded successfully:', fileInfo);
+        } else {
+          console.error('File upload failed:', uploadResponse.status);
         }
       } catch (error) {
         console.error('File upload failed:', error);
