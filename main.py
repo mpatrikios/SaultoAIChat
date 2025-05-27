@@ -827,6 +827,9 @@ def chat_stream():
         user_message = data.get('message', '')
         conversation_id = data.get('conversation_id', '')
         
+        # Debug logging to see what data we're receiving
+        logger.info(f"Streaming request data: {data}")
+        
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
             
