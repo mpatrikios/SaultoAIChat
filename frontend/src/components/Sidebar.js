@@ -6,10 +6,11 @@ const Sidebar = ({
   onConversationSelect, 
   onNewConversation,
   onDeleteConversation,
-  onPinConversation
+  onPinConversation,
+  className = ''
 }) => {
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${className}`}>
       <div className="sidebar-header">
         <div className="sidebar-title">History</div>
       </div>

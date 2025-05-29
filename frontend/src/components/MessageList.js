@@ -22,7 +22,7 @@ const MessageList = ({ messages, isLoading }) => {
                     <ul className="markdown-list">{children}</ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="markdown-list">{children}</ul>
+                    <ol className="markdown-list">{children}</ol>
                   ),
                   li: ({ children }) => (
                     <li className="markdown-list-item">{children}</li>
