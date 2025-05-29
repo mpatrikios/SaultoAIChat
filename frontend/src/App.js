@@ -9,6 +9,7 @@ function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     loadConversations();
@@ -70,16 +71,38 @@ function App() {
     }
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <div className="app-container">
-      <Header />
+      {/* Mobile overlay */}
+      <div 
+        className={`sidebar-overlay ${isMobileMenuOpen ? 'active' : ''}`}
+        onClick={closeMobileMenu}
+      ></div>
+      
+      <Sidebar 
+        conversations={conversations}
+        currentConversation={currentConversation}
+        onSelectConversation={(conversation) => {
+          setCurrentConversation(conversation);
+          closeMobileMenu(); // Close menu when conversation is selected on mobile
+        }}
+        onNewConversation={() => {
+          setCurrentConversation(null);
+          closeMobileMenu(); // Close menu when new conversation is created on mobile
+        }}
+        className={isMobileMenuOpen ? 'mobile-open' : ''}
+      />
+      
       <div className="main-content">
-        <Sidebar 
-          conversations={conversations}
-          currentConversation={currentConversation}
-          onSelectConversation={setCurrentConversation}
-          onNewConversation={() => setCurrentConversation(null)}
-        />
+        <Header onMobileMenuToggle={toggleMobileMenu} />
         <ChatInterface
           conversation={currentConversation}
           onSendMessage={handleSendMessage}
