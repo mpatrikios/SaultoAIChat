@@ -215,8 +215,9 @@ def microsoft_auth():
         )
 
         if token_response.status_code != 200:
-            logger.error(f"Token exchange failed: {token_response.text}")
-            return f"Token exchange failed: {token_response.status_code}", 400
+            logger.error(f"Token exchange failed: Status {token_response.status_code}, Response: {token_response.text}")
+            logger.error(f"Token request data: {token_data}")
+            return f"Authentication failed: server_error (token exchange failed with status {token_response.status_code})", 400
 
         token = token_response.json()
         access_token = token.get('access_token')
@@ -234,8 +235,9 @@ def microsoft_auth():
         user_response = requests.get('https://graph.microsoft.com/v1.0/me', headers=headers)
 
         if user_response.status_code != 200:
-            logger.error(f"Failed to get user info: {user_response.text}")
-            return f"Failed to get user information: {user_response.status_code}", 400
+            logger.error(f"Microsoft Graph API failed: Status {user_response.status_code}, Response: {user_response.text}")
+            logger.error(f"Access token used: {access_token[:20]}..." if access_token else "No access token")
+            return f"Authentication failed: server_error (failed to get user information)", 400
 
         graph_data = user_response.json()
 
