@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SumersaultLogo from './SumersaultLogo';
 import axios from 'axios';
 
-const Header = ({ title, onMobileMenuToggle }) => {
+const Header = ({ title }) => {
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   
@@ -30,9 +30,6 @@ const Header = ({ title, onMobileMenuToggle }) => {
 
   return (
     <div className="chat-header">
-      <button className="mobile-menu-btn" onClick={onMobileMenuToggle}>
-        <i className="fas fa-bars"></i>
-      </button>
       <div className="chat-title">SaultoChat</div>
       
       <div className="header-right">
