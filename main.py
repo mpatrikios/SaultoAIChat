@@ -347,9 +347,9 @@ def get_conversation():
         del new_conversation['_id']
         return jsonify(new_conversation)
 
-@app.route('/api/message_disabled', methods=['POST'])
+@app.route('/api/message', methods=['POST'])
 @login_required
-def add_message_disabled():
+def add_message():
     file_info = None
     file_path = None
 
