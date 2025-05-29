@@ -9,6 +9,7 @@ function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadConversations();
@@ -70,15 +71,37 @@ function App() {
     }
   };
 
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const closeMobileSidebar = () => {
+    setIsMobileSidebarOpen(false);
+  };
+
   return (
     <div className="app-container">
-      <Header />
+      {/* Mobile overlay */}
+      <div 
+        className={`mobile-sidebar-overlay ${isMobileSidebarOpen ? 'active' : ''}`}
+        onClick={closeMobileSidebar}
+      ></div>
+      
+      <Header onMobileMenuToggle={toggleMobileSidebar} />
+      
       <div className="main-content">
         <Sidebar 
           conversations={conversations}
           currentConversation={currentConversation}
-          onSelectConversation={setCurrentConversation}
-          onNewConversation={() => setCurrentConversation(null)}
+          onSelectConversation={(conversation) => {
+            setCurrentConversation(conversation);
+            closeMobileSidebar();
+          }}
+          onNewConversation={() => {
+            setCurrentConversation(null);
+            closeMobileSidebar();
+          }}
+          className={isMobileSidebarOpen ? 'mobile-open' : ''}
         />
         <ChatInterface
           conversation={currentConversation}
